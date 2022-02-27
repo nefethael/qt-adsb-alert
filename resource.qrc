@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/adsb">
+        <file alias="icao_ac_types2">icao_aircraft_types2.js</file>
+    </qresource>
+</RCC>

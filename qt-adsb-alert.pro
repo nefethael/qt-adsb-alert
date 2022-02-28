@@ -22,6 +22,7 @@ SOURCES += \
     Smtp/quotedprintable.cpp \
     Smtp/smtpclient.cpp \
     craftmodel.cpp \
+    craftproxymodel.cpp \
     main.cpp \
     mainwindow.cpp
 
@@ -42,6 +43,7 @@ HEADERS += \
     Smtp/smtpexports.h \
     adsb.h \
     craftmodel.h \
+    craftproxymodel.h \
     mainwindow.h
 
 FORMS += \
@@ -53,7 +55,8 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
 DISTFILES += \
-    icao_aircraft_types2.js
+    icao_aircraft_types2.js \
+    setup.ini
 
 RESOURCES += \
     resource.qrc

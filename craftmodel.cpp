@@ -3,7 +3,6 @@
 #include <QDebug>
 #include <QFile>
 #include <QTimer>
-#include <QGeoCoordinate>
 #include <cmath>
 #include <QColor>
 #include <QBrush>
@@ -20,7 +19,7 @@ static QString stringFromChars(char* array, int size)
 }
 
 
-Craft::Craft(binCraft & bin, const QJsonDocument &icaoAircraftTypes)
+Craft::Craft(binCraft & bin, const QJsonDocument &icaoAircraftTypes, const QGeoCoordinate & home)
 {
     m_callsign = stringFromChars((char*)bin.callsign, 8);
     m_hex = QString("%1").arg(bin.hex, 8, 16).toUpper().trimmed();
@@ -53,16 +52,16 @@ Craft::Craft(binCraft & bin, const QJsonDocument &icaoAircraftTypes)
     m_dbFlags = flags;
 
     QGeoCoordinate aircraft(bin.lat/1e6, bin.lon/1e6, m_altitude*0.3048);
-    QGeoCoordinate bordeaux(44.83, -0.53, 0);
-    auto dist2d =  aircraft.distanceTo(bordeaux);
-    m_distanceToMe = std::hypot(dist2d, aircraft.altitude() - bordeaux.altitude());
+    auto dist2d =  aircraft.distanceTo(home);
+    m_distanceToMe = std::hypot(dist2d, aircraft.altitude() - home.altitude());
+    m_gettingCloser = qAbs(aircraft.azimuthTo(home) - m_heading);
 
-    m_sendAlert = ((m_distanceToMe < 50000)
+    m_sendAlert = (((m_distanceToMe < 50000) || ((m_distanceToMe < 100000) && (m_gettingCloser < 20)))
             && ((bin.dbFlags & 1) // mili
                 || (m_typeDesc.mid(1,1).toUInt() > 2) // plus de 2 réacteurs
                 || m_callsign.startsWith("CTM")
-                || m_callsign == "ZEROG"
-                || m_typeCode == "A400"
+                || (m_callsign == "ZEROG")
+                || (m_typeCode == "A400")
                 ));
 }
 
@@ -83,7 +82,7 @@ int CraftModel::rowCount(const QModelIndex & /*parent*/) const
 
 int CraftModel::columnCount(const QModelIndex & /*parent*/) const
 {
-    return 11;
+    return 12;
 }
 
 QVariant CraftModel::data(const QModelIndex &index, int role) const
@@ -94,28 +93,30 @@ QVariant CraftModel::data(const QModelIndex &index, int role) const
 
     if (role == Qt::DisplayRole){
         switch(col){
-        case 0:
+        case CM_CALLSIGN:
             return craft.getCallsign();
-        case 1:
+        case CM_HEX:
             return craft.getHex();
-        case 2:
+        case CM_CODE:
             return craft.getTypeCode();
-        case 3:
+        case CM_TYPE:
             return craft.getTypeDesc();
-        case 4:
+        case CM_FLAG:
             return craft.getDbFlags();
-        case 5:
+        case CM_ALT:
             return craft.getAltitude();
-        case 6:
+        case CM_SPEED:
             return craft.getGS();
-        case 7:
+        case CM_HEADING:
             return craft.getHeading();
-        case 8:
+        case CM_REG:
             return craft.getReg();
-        case 9:
+        case CM_SQUAWK:
             return craft.getSquawk();
-        case 10:
+        case CM_DIST:
             return craft.getDistanceToMe();
+        case CM_AZIMUT:
+            return craft.getGettingCloser();
         default:
             return QVariant();
         }
@@ -130,28 +131,30 @@ QVariant CraftModel::headerData(int section, Qt::Orientation orientation, int ro
 {
     if (role == Qt::DisplayRole && orientation == Qt::Horizontal) {
         switch(section){
-        case 0:
+        case CM_CALLSIGN:
             return QString("Callsign");
-        case 1:
+        case CM_HEX:
             return QString("ICAO");
-        case 2:
+        case CM_CODE:
             return QString("Code");
-        case 3:
+        case CM_TYPE:
             return QString("Type");
-        case 4:
+        case CM_FLAG:
             return QString("Flag");
-        case 5:
+        case CM_ALT:
             return QString("Altitude");
-        case 6:
+        case CM_SPEED:
             return QString("Speed");
-        case 7:
+        case CM_HEADING:
             return QString("Heading");
-        case 8:
+        case CM_REG:
             return QString("Registration");
-        case 9:
+        case CM_SQUAWK:
             return QString("Squawk");
-        case 10:
+        case CM_DIST:
             return QString("Distance");
+        case CM_AZIMUT:
+            return QString("Azimut");
         default:
             QVariant();
         }
@@ -163,7 +166,7 @@ void CraftModel::refreshCraft(QVector<binCraft>& lst)
 {
     beginResetModel();
     for(auto i = 0; i < lst.size(); i++){
-        Craft craftToAdd(lst[i], m_icaoAircraftTypes);
+        Craft craftToAdd(lst[i], m_icaoAircraftTypes, m_home);
         bool isFound = false;
         for (auto j = 0; (j < m_craftData.size()) && !isFound; j++){
             if(m_craftData[j].getHex() == craftToAdd.getHex()){
@@ -178,10 +181,7 @@ void CraftModel::refreshCraft(QVector<binCraft>& lst)
             QTimer::singleShot(1000, [this, craftToAdd]() {
                 sendMailAlert(craftToAdd);
             });
-        }else{
-            m_alerted.remove(craftToAdd.getHex());
         }
-
     }
     endResetModel();
 }
@@ -213,18 +213,18 @@ bool CraftModel::sendMailAlert(const Craft & craft)
     }
     m_alerted.insert(craft.getHex());
 
-#error to complete
-    QString userSmtp = "<user@gmail.com>";
-    QString passSmtp = "<two-factor app token>";
-    QString userName = "<My Name>";
+    if(m_userSmtp.isEmpty()){
+        qDebug() << "No Smtp information, don't notify!" << craft.getHex();
+        return false;
+    }
 
     SmtpClient smtp("smtp.gmail.com", 587, SmtpClient::TlsConnection);
-    smtp.setUser(userSmtp);
-    smtp.setPassword(passSmtp);
+    smtp.setUser(m_emailSmtp);
+    smtp.setPassword(m_passSmtp);
 
     MimeMessage message;
-    message.setSender(new EmailAddress(userSmtp, userName));
-    message.addRecipient(new EmailAddress(userSmtp, userName));
+    message.setSender(new EmailAddress(m_emailSmtp, m_userSmtp));
+    message.addRecipient(new EmailAddress(m_emailSmtp, m_userSmtp));
     message.setSubject(QString("ADSB ALERT %1").arg(craft.getTypeCode()));
 
     // Now add some text to the email.
@@ -251,4 +251,16 @@ bool CraftModel::sendMailAlert(const Craft & craft)
     bool ok = smtp.sendMail(message);
     smtp.quit();
     return ok;
+}
+
+void CraftModel::setSmtp(QString user, QString pass, QString mail)
+{
+    m_userSmtp = user;
+    m_passSmtp = pass;
+    m_emailSmtp = mail;
+}
+
+void CraftModel::setHome(QGeoCoordinate home)
+{
+    m_home = home;
 }

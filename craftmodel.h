@@ -3,6 +3,7 @@
 
 #include <QAbstractTableModel>
 #include <QJsonDocument>
+#include <QGeoCoordinate>
 #include <QSet>
 
 #include "adsb.h"
@@ -10,7 +11,7 @@
 class Craft
 {
 public:
-    Craft(binCraft & bin, const QJsonDocument &icaoAircraftTypes);
+    Craft(binCraft & bin, const QJsonDocument &icaoAircraftTypes, const QGeoCoordinate & home);
     Craft() = default;
 
     inline auto getCallsign() const { return m_callsign; };
@@ -26,6 +27,7 @@ public:
     inline auto getReg() const { return m_registration; }
     inline auto getSquawk() const { return m_squawk; }
     inline auto getDistanceToMe() const { return m_distanceToMe;  }
+    inline auto getGettingCloser() const { return m_gettingCloser;  }
     inline auto getSendAlert() const { return m_sendAlert;  }
     inline auto getSeen() const { return m_seen;  }
     inline auto getLastRefresh() const { return m_lastRefresh;  }
@@ -44,6 +46,7 @@ private:
     QString m_registration;
     QString m_squawk;
     qreal m_distanceToMe;
+    qreal m_gettingCloser;
     bool m_sendAlert = false;
     float m_seen = 0.0;
     qint64 m_lastRefresh;
@@ -53,6 +56,21 @@ class CraftModel : public QAbstractTableModel
 {
     Q_OBJECT
 public:
+    enum Column{
+      CM_CALLSIGN = 0,
+      CM_HEX,
+      CM_CODE,
+      CM_TYPE,
+      CM_FLAG,
+      CM_ALT,
+      CM_SPEED,
+      CM_HEADING,
+      CM_REG,
+      CM_SQUAWK,
+      CM_DIST,
+      CM_AZIMUT
+    };
+
     CraftModel(QObject *parent = nullptr);
 
     int rowCount(const QModelIndex &parent = QModelIndex()) const override;
@@ -62,12 +80,22 @@ public:
 
     void refreshCraft(QVector<binCraft>& c);
     void clearCraft();
+
+    void setSmtp(QString user, QString pass, QString mail);
+    void setHome(QGeoCoordinate home);
+
 private:
     bool sendMailAlert(const Craft & craft);
 
     QVector<Craft> m_craftData;
     QJsonDocument m_icaoAircraftTypes;
     QSet<QString> m_alerted;
+
+    QString m_userSmtp;
+    QString m_passSmtp;
+    QString m_emailSmtp;
+
+    QGeoCoordinate m_home;
 };
 
 #endif // CRAFTMODEL_H

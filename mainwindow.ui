@@ -6,36 +6,159 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>800</width>
+    <width>1018</width>
     <height>600</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>qt-adsb-alert</string>
+  </property>
+  <property name="windowIcon">
+   <iconset resource="resource.qrc">
+    <normaloff>:/adsb/favicon</normaloff>:/adsb/favicon</iconset>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
+    <item row="2" column="1">
+     <widget class="QLineEdit" name="m_speedMinLE"/>
+    </item>
+    <item row="4" column="1">
+     <widget class="QLineEdit" name="m_altMinLE"/>
+    </item>
+    <item row="0" column="4">
+     <widget class="QLabel" name="label_3">
+      <property name="text">
+       <string>Code</string>
+      </property>
+     </widget>
+    </item>
+    <item row="4" column="3">
+     <widget class="QLineEdit" name="m_altMaxLE"/>
+    </item>
+    <item row="0" column="5">
+     <widget class="QLineEdit" name="m_codeLE"/>
+    </item>
     <item row="0" column="0">
+     <widget class="QLabel" name="label">
+      <property name="text">
+       <string>Callsign</string>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="8">
+     <widget class="QLabel" name="label_5">
+      <property name="text">
+       <string>Flags</string>
+      </property>
+     </widget>
+    </item>
+    <item row="2" column="0">
+     <widget class="QLabel" name="label_7">
+      <property name="text">
+       <string>Speed min</string>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="1">
+     <widget class="QLineEdit" name="m_callsignLE"/>
+    </item>
+    <item row="4" column="0">
+     <widget class="QLabel" name="label_6">
+      <property name="text">
+       <string>Altitude min</string>
+      </property>
+     </widget>
+    </item>
+    <item row="4" column="2">
+     <widget class="QLabel" name="label_12">
+      <property name="text">
+       <string>max</string>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="2">
+     <widget class="QLabel" name="label_2">
+      <property name="text">
+       <string>ICAO</string>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="9">
+     <widget class="QLineEdit" name="m_flagLE"/>
+    </item>
+    <item row="2" column="3">
+     <widget class="QLineEdit" name="m_speedMaxLE"/>
+    </item>
+    <item row="2" column="2">
+     <widget class="QLabel" name="label_8">
+      <property name="text">
+       <string>max</string>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="3">
+     <widget class="QLineEdit" name="m_hexLE"/>
+    </item>
+    <item row="5" column="0" colspan="12">
      <widget class="QTableView" name="tableView">
       <property name="sortingEnabled">
        <bool>true</bool>
       </property>
      </widget>
     </item>
+    <item row="1" column="0">
+     <widget class="QLabel" name="label_10">
+      <property name="text">
+       <string>Squawk</string>
+      </property>
+     </widget>
+    </item>
+    <item row="1" column="1">
+     <widget class="QLineEdit" name="m_squawkLE"/>
+    </item>
+    <item row="1" column="2">
+     <widget class="QLabel" name="label_11">
+      <property name="text">
+       <string>Distance</string>
+      </property>
+     </widget>
+    </item>
+    <item row="1" column="3">
+     <widget class="QLineEdit" name="m_distLE"/>
+    </item>
+    <item row="1" column="4">
+     <widget class="QLabel" name="label_4">
+      <property name="text">
+       <string>Type</string>
+      </property>
+     </widget>
+    </item>
+    <item row="1" column="5">
+     <widget class="QLineEdit" name="m_typeLE"/>
+    </item>
+    <item row="1" column="8">
+     <widget class="QLabel" name="label_9">
+      <property name="text">
+       <string>Reg</string>
+      </property>
+     </widget>
+    </item>
+    <item row="1" column="9">
+     <widget class="QLineEdit" name="m_regLE"/>
+    </item>
+    <item row="4" column="9">
+     <widget class="QPushButton" name="m_resetPB">
+      <property name="text">
+       <string>Reset filters</string>
+      </property>
+     </widget>
+    </item>
    </layout>
-  </widget>
-  <widget class="QMenuBar" name="menubar">
-   <property name="geometry">
-    <rect>
-     <x>0</x>
-     <y>0</y>
-     <width>800</width>
-     <height>26</height>
-    </rect>
-   </property>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
  </widget>
- <resources/>
+ <resources>
+  <include location="resource.qrc"/>
+ </resources>
  <connections/>
 </ui>

@@ -2,6 +2,7 @@
 #include "ui_mainwindow.h"
 #include "adsb.h"
 #include "craftmodel.h"
+#include "craftproxymodel.h"
 
 #include <QNetworkReply>
 #include <QNetworkCookie>
@@ -9,11 +10,9 @@
 #include <QRandomGenerator>
 #include <QUrlQuery>
 #include <QSortFilterProxyModel>
+#include <QSettings>
 
 const QUrl MainWindow::s_mainUrl = QUrl("https://globe.adsbexchange.com/globeRates.json");
-const QUrl MainWindow::s_bdxWUrl = QUrl("https://globe.adsbexchange.com/data/globe_0016.binCraft");
-const QUrl MainWindow::s_bdxSUrl = QUrl("https://globe.adsbexchange.com/data/globe_6384.binCraft");
-const QUrl MainWindow::s_bdxNUrl = QUrl("https://globe.adsbexchange.com/data/globe_6505.binCraft");
 
 static QString JSMathRandomToString36(double input)
 {
@@ -51,18 +50,28 @@ static QNetworkCookie generateADSBCookie()
 
 CraftModel* MainWindow::getCraftModel()
 {
-    return dynamic_cast<CraftModel*>(dynamic_cast<QSortFilterProxyModel*>(ui->tableView->model())->sourceModel());
+    return dynamic_cast<CraftModel*>(dynamic_cast<CraftProxyModel*>(ui->tableView->model())->sourceModel());
+}
+
+void MainWindow::setADSBCookie()
+{
+    auto cl = QList<QNetworkCookie>();
+    cl.append(generateADSBCookie());
+
+    for(auto &k : m_tiles){
+        m_manager->cookieJar()->setCookiesFromUrl(cl, k);
+    }
 }
 
 void MainWindow::initializeADSB()
 {
     m_manager = new QNetworkAccessManager(this);
 
-    auto cl = QList<QNetworkCookie>();
-    cl.append(generateADSBCookie());
-    m_manager->cookieJar()->setCookiesFromUrl(cl, s_bdxWUrl);
-    m_manager->cookieJar()->setCookiesFromUrl(cl, s_bdxSUrl);
-    m_manager->cookieJar()->setCookiesFromUrl(cl, s_bdxNUrl);
+    // Refresh cookie every 24H
+    setADSBCookie();
+    auto cookieTimer = new QTimer(this);
+    connect(cookieTimer, &QTimer::timeout, this, &MainWindow::setADSBCookie);
+    cookieTimer->start(1000*60*60*24);
 
     connect(m_manager, &QNetworkAccessManager::finished, this, &MainWindow::replyFinished);
 
@@ -76,21 +85,12 @@ void MainWindow::initializeADSB()
             getCraftModel()->clearCraft();
 
             // retrieve globe_x.binCraft
-            QNetworkRequest req;
-            req.setUrl(s_bdxWUrl);
-            req.setRawHeader("Referer", "https://globe.adsbexchange.com/");
-            m_manager->get(req);
-
-            QNetworkRequest req2;
-            req2.setUrl(s_bdxSUrl);
-            req2.setRawHeader("Referer", "https://globe.adsbexchange.com/");
-            m_manager->get(req2);
-
-            QNetworkRequest req3;
-            req3.setUrl(s_bdxNUrl);
-            req3.setRawHeader("Referer", "https://globe.adsbexchange.com/");
-            m_manager->get(req3);
-
+            for(auto k : m_tiles){
+                QNetworkRequest req;
+                req.setUrl(k);
+                req.setRawHeader("Referer", "https://globe.adsbexchange.com/");
+                m_manager->get(req);
+            }
         });
         timer->start(10000);
     });
@@ -110,11 +110,63 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    QSortFilterProxyModel *proxyModel = new QSortFilterProxyModel(this);
-    proxyModel->setSourceModel(new CraftModel(this));
+    QSettings settings("setup.ini", QSettings::Format::IniFormat);
+    if(settings.status() != QSettings::Status::NoError){
+        qDebug() << "Setup.ini not loaded";
+    }
+
+    //smtp
+    auto userSmtp = settings.value("userSmtp").toString();
+    auto passSmtp = settings.value("passSmtp").toString();
+    auto emailSmtp = settings.value("emailSmtp").toString();
+    //home
+    auto home_lat = settings.value("home_lat").toDouble();
+    auto home_lon = settings.value("home_lon").toDouble();
+    auto home_alt = settings.value("home_alt").toDouble();
+    // globe
+    auto tiles = settings.value("tiles").toStringList();
+
+    auto* model = new CraftModel(this);
+    model->setSmtp(userSmtp, passSmtp, emailSmtp);
+    model->setHome(QGeoCoordinate(home_lat, home_lon, home_alt));
+
+    for(const auto &k : tiles){
+        m_tiles.append(QUrl(QString("https://globe.adsbexchange.com/data/globe_%1.binCraft").arg(k)));
+    }
+
+    CraftProxyModel *proxyModel = new CraftProxyModel(this);
+    proxyModel->setSourceModel(model);
     ui->tableView->setModel(proxyModel);
     ui->tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     ui->tableView->sortByColumn(10, Qt::AscendingOrder);
+
+    connect(ui->m_callsignLE, &QLineEdit::textEdited, proxyModel, &CraftProxyModel::setCallsignFilter);
+    connect(ui->m_hexLE,      &QLineEdit::textEdited, proxyModel, &CraftProxyModel::setHexFilter);
+    connect(ui->m_codeLE,     &QLineEdit::textEdited, proxyModel, &CraftProxyModel::setCodeFilter);
+    connect(ui->m_typeLE,     &QLineEdit::textEdited, proxyModel, &CraftProxyModel::setTypeFilter);
+    connect(ui->m_flagLE,     &QLineEdit::textEdited, proxyModel, &CraftProxyModel::setFlagFilter);
+    connect(ui->m_altMinLE,   &QLineEdit::textEdited, proxyModel, &CraftProxyModel::setAltMinFilter);
+    connect(ui->m_altMaxLE,   &QLineEdit::textEdited, proxyModel, &CraftProxyModel::setAltMaxFilter);
+    connect(ui->m_speedMinLE, &QLineEdit::textEdited, proxyModel, &CraftProxyModel::setSpeedMinFilter);
+    connect(ui->m_speedMaxLE, &QLineEdit::textEdited, proxyModel, &CraftProxyModel::setSpeedMaxFilter);
+    connect(ui->m_regLE,      &QLineEdit::textEdited, proxyModel, &CraftProxyModel::setRegistrationFilter);
+    connect(ui->m_squawkLE,   &QLineEdit::textEdited, proxyModel, &CraftProxyModel::setSquawkFilter);
+    connect(ui->m_distLE,     &QLineEdit::textEdited, proxyModel, &CraftProxyModel::setDistanceFilter);
+    connect(ui->m_resetPB,    &QPushButton::clicked, this, [this, proxyModel](){
+        ui->m_callsignLE->setText("");
+        ui->m_hexLE->setText("");
+        ui->m_codeLE->setText("");
+        ui->m_typeLE->setText("");
+        ui->m_flagLE->setText("");
+        ui->m_altMinLE->setText("");
+        ui->m_altMaxLE->setText("");
+        ui->m_speedMinLE->setText("");
+        ui->m_speedMaxLE->setText("");
+        ui->m_regLE->setText("");
+        ui->m_squawkLE->setText("");
+        ui->m_distLE->setText("");
+        proxyModel->resetFilter();
+    });
 
     // setup ADSB network manager
     initializeADSB();
@@ -122,6 +174,7 @@ MainWindow::MainWindow(QWidget *parent)
 
 MainWindow::~MainWindow()
 {
+    delete m_manager;
     delete ui;
 }
 

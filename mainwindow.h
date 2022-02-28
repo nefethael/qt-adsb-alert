@@ -28,12 +28,11 @@ private:
     void replyFinished(QNetworkReply *reply);
     void initializeADSB();
     inline CraftModel* getCraftModel();
+    void setADSBCookie();
 
     QNetworkAccessManager *m_manager;
+    QList<QUrl> m_tiles;
 
     static const QUrl s_mainUrl;
-    static const QUrl s_bdxWUrl;
-    static const QUrl s_bdxSUrl;
-    static const QUrl s_bdxNUrl;
 };
 #endif // MAINWINDOW_H

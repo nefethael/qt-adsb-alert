@@ -12,6 +12,8 @@
 #include <QSortFilterProxyModel>
 #include <QSettings>
 
+#define K_REFRESH_PERIOD_MS 10000
+
 const QUrl MainWindow::s_mainUrl = QUrl("https://globe.adsbexchange.com/globeRates.json");
 
 static QString JSMathRandomToString36(double input)
@@ -53,35 +55,45 @@ CraftModel* MainWindow::getCraftModel()
     return dynamic_cast<CraftModel*>(dynamic_cast<CraftProxyModel*>(ui->tableView->model())->sourceModel());
 }
 
-void MainWindow::setADSBCookie()
+void MainWindow::restartConnection()
 {
+    if(m_manager){
+        delete m_manager;
+        m_manager = nullptr;
+    }
+
+    m_manager = new QNetworkAccessManager(this);
     auto cl = QList<QNetworkCookie>();
     cl.append(generateADSBCookie());
 
     for(auto &k : m_tiles){
         m_manager->cookieJar()->setCookiesFromUrl(cl, k);
     }
-}
-
-void MainWindow::initializeADSB()
-{
-    m_manager = new QNetworkAccessManager(this);
-
-    // Refresh cookie every 24H
-    setADSBCookie();
-    auto cookieTimer = new QTimer(this);
-    connect(cookieTimer, &QTimer::timeout, this, &MainWindow::setADSBCookie);
-    cookieTimer->start(1000*60*60*24);
 
     connect(m_manager, &QNetworkAccessManager::finished, this, &MainWindow::replyFinished);
 
+    QNetworkRequest initReq;
+    initReq.setUrl(s_mainUrl);
+    QUrlQuery query;
+    query.addQueryItem("_", QString::number(QDateTime::currentMSecsSinceEpoch()));
+    m_manager->get(initReq);
+}
+
+void MainWindow::initializeTimers()
+{
     // when init is done
     connect(this, &MainWindow::initDone, this, [this](){
 
         // trigger adsb request every 10 seconds
-        auto timer = new QTimer(this);
-        connect(timer, &QTimer::timeout, this, [this](){
-
+        if(m_reqTimer){
+            delete m_reqTimer;
+            m_reqTimer = nullptr;
+        }
+        m_reqTimer = new QTimer(this);
+        connect(m_reqTimer, &QTimer::timeout, this, [this](){
+            if(!m_manager) {
+                qDebug() << "Manager is not ready yet.";
+            }
             getCraftModel()->clearCraft();
 
             // retrieve globe_x.binCraft
@@ -92,14 +104,14 @@ void MainWindow::initializeADSB()
                 m_manager->get(req);
             }
         });
-        timer->start(10000);
+        m_reqTimer->start(K_REFRESH_PERIOD_MS);
     });
 
-    QNetworkRequest initReq;
-    initReq.setUrl(s_mainUrl);
-    QUrlQuery query;
-    query.addQueryItem("_", QString::number(QDateTime::currentMSecsSinceEpoch()));
-    m_manager->get(initReq);
+    // Refresh cookie every 24H
+    restartConnection();
+    auto cookieTimer = new QTimer(this);
+    connect(cookieTimer, &QTimer::timeout, this, &MainWindow::restartConnection);
+    cookieTimer->start(86400000);
 }
 
 
@@ -169,7 +181,7 @@ MainWindow::MainWindow(QWidget *parent)
     });
 
     // setup ADSB network manager
-    initializeADSB();
+    initializeTimers();
 }
 
 MainWindow::~MainWindow()
@@ -198,7 +210,7 @@ void MainWindow::replyFinished(QNetworkReply *reply)
     struct binHeader hdr;
     memcpy((void*)&hdr, bytes.data(), sizeof(struct binHeader));
 
-    qDebug() << "nb avions" << nbCraft;
+    qDebug() << nbCraft <<  " aircrafts fetched at " << QDateTime::currentDateTime().toString() ;
 
     QVector<struct binCraft> craftList(nbCraft);
     for(auto i = 0; i < nbCraft; i++){
@@ -207,4 +219,6 @@ void MainWindow::replyFinished(QNetworkReply *reply)
         memcpy((void*)&craft, bytes.data()+offset, elementSize);
     }
     getCraftModel()->refreshCraft(craftList);
+
+    reply->deleteLater();
 }

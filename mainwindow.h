@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include <QNetworkAccessManager>
 #include <QNetworkCookieJar>
+#include <QTimer>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -26,12 +27,14 @@ private:
     Ui::MainWindow *ui;
 
     void replyFinished(QNetworkReply *reply);
-    void initializeADSB();
     inline CraftModel* getCraftModel();
-    void setADSBCookie();
 
-    QNetworkAccessManager *m_manager;
+    void initializeTimers();
+    void restartConnection();
+
+    QNetworkAccessManager *m_manager = nullptr;
     QList<QUrl> m_tiles;
+    QTimer *m_reqTimer = nullptr;
 
     static const QUrl s_mainUrl;
 };

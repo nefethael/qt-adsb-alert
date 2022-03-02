@@ -1,4 +1,4 @@
-QT       += core gui network positioning
+QT       += core gui network positioning qml
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -56,6 +56,7 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 
 DISTFILES += \
     icao_aircraft_types2.js \
+    sendAlert.mjs \
     setup.ini
 
 RESOURCES += \

@@ -5,13 +5,14 @@
 #include <QJsonDocument>
 #include <QGeoCoordinate>
 #include <QSet>
+#include <QJSEngine>
 
 #include "adsb.h"
 
 class Craft
 {
 public:
-    Craft(binCraft & bin, const QJsonDocument &icaoAircraftTypes, const QGeoCoordinate & home);
+    Craft(binCraft & bin, const QJsonDocument &icaoAircraftTypes, const QGeoCoordinate & home, QJSEngine & js);
     Craft() = default;
 
     inline auto getCallsign() const { return m_callsign; };
@@ -96,6 +97,8 @@ private:
     QString m_emailSmtp;
 
     QGeoCoordinate m_home;
+
+    QJSEngine m_jsEngine;
 };
 
 #endif // CRAFTMODEL_H

@@ -19,7 +19,7 @@ static QString stringFromChars(char* array, int size)
 }
 
 
-Craft::Craft(binCraft & bin, const QJsonDocument &icaoAircraftTypes, const QGeoCoordinate & home)
+Craft::Craft(binCraft & bin, const QJsonDocument &icaoAircraftTypes, const QGeoCoordinate & home, QJSEngine & js)
 {
     m_callsign = stringFromChars((char*)bin.callsign, 8);
     m_hex = QString("%1").arg(bin.hex, 8, 16).toUpper().trimmed();
@@ -56,13 +56,34 @@ Craft::Craft(binCraft & bin, const QJsonDocument &icaoAircraftTypes, const QGeoC
     m_distanceToMe = std::hypot(dist2d, aircraft.altitude() - home.altitude());
     m_gettingCloser = qAbs(aircraft.azimuthTo(home) - m_heading);
 
-    m_sendAlert = (((m_distanceToMe < 50000) || ((m_distanceToMe < 100000) && (m_gettingCloser < 20)))
-            && ((bin.dbFlags & 1) // mili
-                || (m_typeDesc.mid(1,1).toUInt() > 2) // plus de 2 réacteurs
-                || m_callsign.startsWith("CTM")
-                || (m_callsign == "ZEROG")
-                || (m_typeCode == "A400")
-                ));
+    js.globalObject().setProperty("callsign", m_callsign);
+    js.globalObject().setProperty("hex", m_hex);
+    js.globalObject().setProperty("typeCode", m_typeCode);
+    js.globalObject().setProperty("typeDesc", m_typeDesc);
+    js.globalObject().setProperty("dbFlags", m_dbFlags);
+    js.globalObject().setProperty("altitude", m_altitude);
+    js.globalObject().setProperty("groundSpeed", m_groundSpeed);
+    js.globalObject().setProperty("mach", m_mach);
+    js.globalObject().setProperty("ias", m_ias);
+    js.globalObject().setProperty("heading", m_heading);
+    js.globalObject().setProperty("registration", m_registration);
+    js.globalObject().setProperty("squawk", m_squawk);
+    js.globalObject().setProperty("distanceToMe", m_distanceToMe);
+    js.globalObject().setProperty("gettingCloser", m_gettingCloser);
+
+    QJSValue module = js.importModule("./sendAlert.mjs");
+    QJSValue sendAlertFunction = module.property("sendAlert");
+    QJSValue result = sendAlertFunction.call();
+
+    if (result.isError()){
+        qDebug()
+                << "Uncaught exception at line"
+                << result.property("lineNumber").toInt()
+                << ":" << result.toString();
+        m_sendAlert = false;
+    }else{
+        m_sendAlert = result.toBool();
+    }
 }
 
 
@@ -73,6 +94,7 @@ CraftModel::CraftModel(QObject *parent)
     loadFile.open(QIODevice::ReadOnly|QIODevice::Text);
     QByteArray saveData = loadFile.readAll();
     m_icaoAircraftTypes = QJsonDocument::fromJson(saveData);
+    m_jsEngine.installExtensions(QJSEngine::ConsoleExtension);
 }
 
 int CraftModel::rowCount(const QModelIndex & /*parent*/) const
@@ -166,7 +188,7 @@ void CraftModel::refreshCraft(QVector<binCraft>& lst)
 {
     beginResetModel();
     for(auto i = 0; i < lst.size(); i++){
-        Craft craftToAdd(lst[i], m_icaoAircraftTypes, m_home);
+        Craft craftToAdd(lst[i], m_icaoAircraftTypes, m_home, m_jsEngine);
         bool isFound = false;
         for (auto j = 0; (j < m_craftData.size()) && !isFound; j++){
             if(m_craftData[j].getHex() == craftToAdd.getHex()){

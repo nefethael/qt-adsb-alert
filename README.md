@@ -25,7 +25,11 @@ In following example, commenting userSmtp disables email notification.
     passSmtp=<gmail token>
     emailSmtp=adsb.spotter.fan@gmail.com
 
+* Notify.run
 
+You can also by notified by https://notify.run, you need to create a channel and then put the name channel in setup file (commenting disabled this notify system)
+
+    ;notifyrun=lnW0LiQwmGKZNtheTkIm
 
 * Home location
 

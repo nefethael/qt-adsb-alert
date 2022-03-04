@@ -6,9 +6,7 @@
 #include <cmath>
 #include <QColor>
 #include <QBrush>
-
-#include "Smtp/smtpclient.h"
-#include "Smtp/mimetext.h"
+#include <QDateTime>
 
 static QString stringFromChars(char* array, int size)
 {
@@ -200,9 +198,7 @@ void CraftModel::refreshCraft(QVector<binCraft>& lst)
             m_craftData.append(craftToAdd);
         }
         if(craftToAdd.getSendAlert()){
-            QTimer::singleShot(1000, [this, craftToAdd]() {
-                sendMailAlert(craftToAdd);
-            });
+            prepareNotify(craftToAdd);
         }
     }
     endResetModel();
@@ -226,60 +222,16 @@ void CraftModel::clearCraft()
     endResetModel();
 }
 
-bool CraftModel::sendMailAlert(const Craft & craft)
+void CraftModel::prepareNotify(const Craft & craft)
 {
     if(m_alerted.contains(craft.getHex()))
     {
         qDebug() << "Already alerted" << craft.getHex();
-        return false;
+        return;
     }
     m_alerted.insert(craft.getHex());
 
-    if(m_userSmtp.isEmpty()){
-        qDebug() << "No Smtp information, don't notify!" << craft.getHex();
-        return false;
-    }
-
-    SmtpClient smtp("smtp.gmail.com", 587, SmtpClient::TlsConnection);
-    smtp.setUser(m_emailSmtp);
-    smtp.setPassword(m_passSmtp);
-
-    MimeMessage message;
-    message.setSender(new EmailAddress(m_emailSmtp, m_userSmtp));
-    message.addRecipient(new EmailAddress(m_emailSmtp, m_userSmtp));
-    message.setSubject(QString("ADSB ALERT %1").arg(craft.getTypeCode()));
-
-    // Now add some text to the email.
-    // First we create a MimeText object.
-    QString str = QString("alt=%1 callsign=%2 flags=%3 dist=%4 gs=%5 hdg=%6 icao=%7 reg=%8 squawk=%9 type=%10 desc=%11\n")
-        .arg(craft.getAltitude())
-        .arg(craft.getCallsign())
-        .arg(craft.getDbFlags())
-        .arg(craft.getDistanceToMe())
-        .arg(craft.getGS())
-        .arg(craft.getHeading())
-        .arg(craft.getHex())
-        .arg(craft.getReg())
-        .arg(craft.getSquawk())
-        .arg(craft.getTypeCode())
-        .arg(craft.getTypeDesc());
-
-    MimeText text;
-    text.setText(str);
-    message.addPart(&text);
-
-    smtp.connectToHost();
-    smtp.login();
-    bool ok = smtp.sendMail(message);
-    smtp.quit();
-    return ok;
-}
-
-void CraftModel::setSmtp(QString user, QString pass, QString mail)
-{
-    m_userSmtp = user;
-    m_passSmtp = pass;
-    m_emailSmtp = mail;
+    notify(craft);
 }
 
 void CraftModel::setHome(QGeoCoordinate home)

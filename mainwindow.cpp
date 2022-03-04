@@ -4,6 +4,9 @@
 #include "craftmodel.h"
 #include "craftproxymodel.h"
 
+#include "Smtp/smtpclient.h"
+#include "Smtp/mimetext.h"
+
 #include <QNetworkReply>
 #include <QNetworkCookie>
 #include <QTimer>
@@ -75,8 +78,6 @@ void MainWindow::restartConnection()
 
     QNetworkRequest initReq;
     initReq.setUrl(s_mainUrl);
-    QUrlQuery query;
-    query.addQueryItem("_", QString::number(QDateTime::currentMSecsSinceEpoch()));
     m_manager->get(initReq);
 }
 
@@ -131,18 +132,19 @@ MainWindow::MainWindow(QWidget *parent)
     }
 
     //smtp
-    auto userSmtp = settings.value("userSmtp").toString();
-    auto passSmtp = settings.value("passSmtp").toString();
-    auto emailSmtp = settings.value("emailSmtp").toString();
+    m_userSmtp = settings.value("userSmtp").toString();
+    m_passSmtp = settings.value("passSmtp").toString();
+    m_emailSmtp = settings.value("emailSmtp").toString();
     //home
     auto home_lat = settings.value("home_lat").toDouble();
     auto home_lon = settings.value("home_lon").toDouble();
     auto home_alt = settings.value("home_alt").toDouble();
     // globe
     auto tiles = settings.value("tiles").toStringList();
+    // notify.run channel
+    m_notifyRun = settings.value("notifyrun").toString();
 
     auto* model = new CraftModel(this);
-    model->setSmtp(userSmtp, passSmtp, emailSmtp);
     model->setHome(QGeoCoordinate(home_lat, home_lon, home_alt));
 
     for(const auto &k : tiles){
@@ -185,6 +187,9 @@ MainWindow::MainWindow(QWidget *parent)
 
     // setup ADSB network manager
     initializeTimers();
+
+    connect(model, &CraftModel::notify, this, &MainWindow::sendMail);
+    connect(model, &CraftModel::notify, this, &MainWindow::sendNotify);
 }
 
 MainWindow::~MainWindow()
@@ -198,12 +203,14 @@ void MainWindow::replyFinished(QNetworkReply *reply)
     auto url = reply->request().url();
     if(url == s_mainUrl){
         emit initDone();
+        reply->deleteLater();
         return ;
     }
 
     auto bytes = reply->readAll();
     if ((bytes.size() < 7) || (bytes.mid(0,6).toStdString() == "<html>")){
         qDebug() << "Problem" << reply->errorString();
+        reply->deleteLater();
         return;
     }
 
@@ -288,4 +295,63 @@ void MainWindow::refreshScene()
     }
 
     ui->graphicsView->fitInView( m_scene->sceneRect(), Qt::KeepAspectRatio);
+}
+
+bool MainWindow::sendMail(const Craft & craft)
+{
+    if(m_userSmtp.isEmpty()){
+        qDebug() << "No Smtp information, don't notify!" << craft.getHex();
+        return false;
+    }
+
+    QString str = QString("alt=%1 callsign=%2 flags=%3 dist=%4 gs=%5 hdg=%6 icao=%7 reg=%8 squawk=%9 type=%10 desc=%11\n")
+        .arg(craft.getAltitude())
+        .arg(craft.getCallsign())
+        .arg(craft.getDbFlags())
+        .arg(craft.getDistanceToMe())
+        .arg(craft.getGS())
+        .arg(craft.getHeading())
+        .arg(craft.getHex())
+        .arg(craft.getReg())
+        .arg(craft.getSquawk())
+        .arg(craft.getTypeCode())
+        .arg(craft.getTypeDesc());
+
+    SmtpClient smtp("smtp.gmail.com", 587, SmtpClient::TlsConnection);
+    smtp.setUser(m_emailSmtp);
+    smtp.setPassword(m_passSmtp);
+
+    MimeMessage message;
+    message.setSender(new EmailAddress(m_emailSmtp, m_userSmtp));
+    message.addRecipient(new EmailAddress(m_emailSmtp, m_userSmtp));
+    message.setSubject(QString("ADSB ALERT %1").arg(craft.getTypeCode()));
+
+    MimeText text;
+    text.setText(str);
+    message.addPart(&text);
+
+    smtp.connectToHost();
+    smtp.login();
+    bool ok = smtp.sendMail(message);
+    smtp.quit();
+    return ok;
+}
+
+bool MainWindow::sendNotify(const Craft & craft)
+{
+    if(m_notifyRun.isEmpty()){
+        qDebug() << "No Notify.run information, don't notify!" << craft.getHex();
+        return false;
+    }
+
+    QString str = QString("ALERT ADSB %1 %2\n")
+        .arg(craft.getCallsign())
+        .arg(craft.getTypeCode());
+
+    QNetworkRequest req;
+    req.setUrl(QString("https://notify.run/%1").arg(m_notifyRun));
+    req.setHeader(QNetworkRequest::ContentTypeHeader, "application/x-www-form-urlencoded");
+    m_manager->post(req, str.toUtf8());
+
+    return true;
 }

@@ -84,22 +84,20 @@ public:
     void refreshCraft(QVector<binCraft>& c);
     void clearCraft();
 
-    void setSmtp(QString user, QString pass, QString mail);
     void setHome(QGeoCoordinate home);
 
     inline auto &getCraft() const { return m_craftData; }
     inline auto &getHome() const { return m_home; }
 
+signals:
+    void notify(const Craft & craft);
+
 private:
-    bool sendMailAlert(const Craft & craft);
+    void prepareNotify(const Craft & craft);
 
     QVector<Craft> m_craftData;
     QJsonDocument m_icaoAircraftTypes;
     QSet<QString> m_alerted;
-
-    QString m_userSmtp;
-    QString m_passSmtp;
-    QString m_emailSmtp;
 
     QGeoCoordinate m_home;
 

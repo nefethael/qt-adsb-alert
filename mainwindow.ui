@@ -19,90 +19,16 @@
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
-    <item row="2" column="1">
-     <widget class="QLineEdit" name="m_speedMinLE"/>
-    </item>
-    <item row="4" column="1">
-     <widget class="QLineEdit" name="m_altMinLE"/>
-    </item>
-    <item row="0" column="4">
-     <widget class="QLabel" name="label_3">
-      <property name="text">
-       <string>Code</string>
-      </property>
-     </widget>
-    </item>
     <item row="4" column="3">
      <widget class="QLineEdit" name="m_altMaxLE"/>
     </item>
     <item row="0" column="5">
      <widget class="QLineEdit" name="m_codeLE"/>
     </item>
-    <item row="0" column="0">
-     <widget class="QLabel" name="label">
+    <item row="0" column="4">
+     <widget class="QLabel" name="label_3">
       <property name="text">
-       <string>Callsign</string>
-      </property>
-     </widget>
-    </item>
-    <item row="0" column="8">
-     <widget class="QLabel" name="label_5">
-      <property name="text">
-       <string>Flags</string>
-      </property>
-     </widget>
-    </item>
-    <item row="2" column="0">
-     <widget class="QLabel" name="label_7">
-      <property name="text">
-       <string>Speed min</string>
-      </property>
-     </widget>
-    </item>
-    <item row="0" column="1">
-     <widget class="QLineEdit" name="m_callsignLE"/>
-    </item>
-    <item row="4" column="0">
-     <widget class="QLabel" name="label_6">
-      <property name="text">
-       <string>Altitude min</string>
-      </property>
-     </widget>
-    </item>
-    <item row="4" column="2">
-     <widget class="QLabel" name="label_12">
-      <property name="text">
-       <string>max</string>
-      </property>
-     </widget>
-    </item>
-    <item row="0" column="2">
-     <widget class="QLabel" name="label_2">
-      <property name="text">
-       <string>ICAO</string>
-      </property>
-     </widget>
-    </item>
-    <item row="0" column="9">
-     <widget class="QLineEdit" name="m_flagLE"/>
-    </item>
-    <item row="2" column="3">
-     <widget class="QLineEdit" name="m_speedMaxLE"/>
-    </item>
-    <item row="2" column="2">
-     <widget class="QLabel" name="label_8">
-      <property name="text">
-       <string>max</string>
-      </property>
-     </widget>
-    </item>
-    <item row="0" column="3">
-     <widget class="QLineEdit" name="m_hexLE"/>
-    </item>
-    <item row="5" column="0" colspan="12">
-     <widget class="QTableView" name="tableView">
-      <property name="sortingEnabled">
-       <bool>true</bool>
+       <string>Code</string>
       </property>
      </widget>
     </item>
@@ -113,8 +39,94 @@
       </property>
      </widget>
     </item>
+    <item row="1" column="7">
+     <widget class="QLineEdit" name="m_regLE"/>
+    </item>
+    <item row="0" column="3">
+     <widget class="QLineEdit" name="m_hexLE"/>
+    </item>
+    <item row="4" column="7">
+     <widget class="QPushButton" name="m_resetPB">
+      <property name="text">
+       <string>Reset filters</string>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="1">
+     <widget class="QLineEdit" name="m_callsignLE"/>
+    </item>
+    <item row="0" column="7">
+     <widget class="QLineEdit" name="m_flagLE"/>
+    </item>
     <item row="1" column="1">
      <widget class="QLineEdit" name="m_squawkLE"/>
+    </item>
+    <item row="4" column="2">
+     <widget class="QLabel" name="label_12">
+      <property name="text">
+       <string>max</string>
+      </property>
+     </widget>
+    </item>
+    <item row="4" column="1">
+     <widget class="QLineEdit" name="m_altMinLE"/>
+    </item>
+    <item row="0" column="0">
+     <widget class="QLabel" name="label">
+      <property name="text">
+       <string>Callsign</string>
+      </property>
+     </widget>
+    </item>
+    <item row="5" column="0" colspan="8">
+     <widget class="QTabWidget" name="tabWidget">
+      <property name="currentIndex">
+       <number>1</number>
+      </property>
+      <widget class="QWidget" name="tab">
+       <attribute name="title">
+        <string>Table</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout">
+        <item>
+         <widget class="QTableView" name="tableView">
+          <property name="sortingEnabled">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tab_2">
+       <attribute name="title">
+        <string>Map</string>
+       </attribute>
+       <layout class="QHBoxLayout" name="horizontalLayout">
+        <item>
+         <widget class="QGraphicsView" name="graphicsView">
+          <property name="verticalScrollBarPolicy">
+           <enum>Qt::ScrollBarAlwaysOff</enum>
+          </property>
+          <property name="horizontalScrollBarPolicy">
+           <enum>Qt::ScrollBarAlwaysOff</enum>
+          </property>
+          <property name="backgroundBrush">
+           <brush brushstyle="SolidPattern">
+            <color alpha="255">
+             <red>0</red>
+             <green>0</green>
+             <blue>0</blue>
+            </color>
+           </brush>
+          </property>
+          <property name="interactive">
+           <bool>false</bool>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </widget>
     </item>
     <item row="1" column="2">
      <widget class="QLabel" name="label_11">
@@ -123,8 +135,45 @@
       </property>
      </widget>
     </item>
+    <item row="2" column="2">
+     <widget class="QLabel" name="label_8">
+      <property name="text">
+       <string>max</string>
+      </property>
+     </widget>
+    </item>
     <item row="1" column="3">
      <widget class="QLineEdit" name="m_distLE"/>
+    </item>
+    <item row="2" column="1">
+     <widget class="QLineEdit" name="m_speedMinLE"/>
+    </item>
+    <item row="0" column="2">
+     <widget class="QLabel" name="label_2">
+      <property name="text">
+       <string>ICAO</string>
+      </property>
+     </widget>
+    </item>
+    <item row="2" column="0">
+     <widget class="QLabel" name="label_7">
+      <property name="text">
+       <string>Speed min</string>
+      </property>
+     </widget>
+    </item>
+    <item row="1" column="5">
+     <widget class="QLineEdit" name="m_typeLE"/>
+    </item>
+    <item row="2" column="3">
+     <widget class="QLineEdit" name="m_speedMaxLE"/>
+    </item>
+    <item row="0" column="6">
+     <widget class="QLabel" name="label_5">
+      <property name="text">
+       <string>Flags</string>
+      </property>
+     </widget>
     </item>
     <item row="1" column="4">
      <widget class="QLabel" name="label_4">
@@ -133,23 +182,17 @@
       </property>
      </widget>
     </item>
-    <item row="1" column="5">
-     <widget class="QLineEdit" name="m_typeLE"/>
-    </item>
-    <item row="1" column="8">
+    <item row="1" column="6">
      <widget class="QLabel" name="label_9">
       <property name="text">
        <string>Reg</string>
       </property>
      </widget>
     </item>
-    <item row="1" column="9">
-     <widget class="QLineEdit" name="m_regLE"/>
-    </item>
-    <item row="4" column="9">
-     <widget class="QPushButton" name="m_resetPB">
+    <item row="4" column="0">
+     <widget class="QLabel" name="label_6">
       <property name="text">
-       <string>Reset filters</string>
+       <string>Altitude min</string>
       </property>
      </widget>
     </item>

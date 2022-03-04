@@ -32,6 +32,7 @@ public:
     inline auto getSendAlert() const { return m_sendAlert;  }
     inline auto getSeen() const { return m_seen;  }
     inline auto getLastRefresh() const { return m_lastRefresh;  }
+    inline auto getPos() const { return m_pos; }
 
 private:
     QString m_callsign;
@@ -51,6 +52,7 @@ private:
     bool m_sendAlert = false;
     float m_seen = 0.0;
     qint64 m_lastRefresh;
+    QGeoCoordinate m_pos;
 };
 
 class CraftModel : public QAbstractTableModel
@@ -84,6 +86,9 @@ public:
 
     void setSmtp(QString user, QString pass, QString mail);
     void setHome(QGeoCoordinate home);
+
+    inline auto &getCraft() const { return m_craftData; }
+    inline auto &getHome() const { return m_home; }
 
 private:
     bool sendMailAlert(const Craft & craft);

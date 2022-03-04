@@ -5,6 +5,7 @@
 #include <QNetworkAccessManager>
 #include <QNetworkCookieJar>
 #include <QTimer>
+#include <QGraphicsScene>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -31,10 +32,13 @@ private:
 
     void initializeTimers();
     void restartConnection();
+    void refreshScene();
 
     QNetworkAccessManager *m_manager = nullptr;
     QList<QUrl> m_tiles;
     QTimer *m_reqTimer = nullptr;
+
+    QGraphicsScene  *m_scene;
 
     static const QUrl s_mainUrl;
 };

@@ -7,7 +7,7 @@ CraftProxyModel::CraftProxyModel(QObject *parent)
 
 }
 
-static bool filterAcceptColumn(const QString filter, int row, CraftModel::Column col, QAbstractItemModel* model, const QModelIndex &parent)
+static bool filterAcceptColumn(const QString filter, int row, CraftModel::Column col, CraftModel* model, const QModelIndex &parent)
 {
     if(!filter.isEmpty()){
         QString tmpFilter = filter;
@@ -26,32 +26,33 @@ static bool filterAcceptColumn(const QString filter, int row, CraftModel::Column
 
 bool CraftProxyModel::filterAcceptsRow(int row, const QModelIndex &parent) const
 {
-    if (!filterAcceptColumn(m_callsignFilter, row, CraftModel::CM_CALLSIGN, sourceModel(), parent )){
+    CraftModel* mdl = dynamic_cast<CraftModel*>(sourceModel());
+    if (!filterAcceptColumn(m_callsignFilter, row, CraftModel::CM_CALLSIGN, mdl, parent )){
         return false;
     }
-    if (!filterAcceptColumn(m_hexFilter, row, CraftModel::CM_HEX, sourceModel(), parent )){
+    if (!filterAcceptColumn(m_hexFilter, row, CraftModel::CM_HEX, mdl, parent )){
         return false;
     }
-    if (!filterAcceptColumn(m_codeFilter, row, CraftModel::CM_CODE, sourceModel(), parent )){
+    if (!filterAcceptColumn(m_codeFilter, row, CraftModel::CM_CODE, mdl, parent )){
         return false;
     }
-    if (!filterAcceptColumn(m_typeFilter, row, CraftModel::CM_TYPE, sourceModel(), parent )){
+    if (!filterAcceptColumn(m_typeFilter, row, CraftModel::CM_TYPE, mdl, parent )){
         return false;
     }
-    if (!filterAcceptColumn(m_flagFilter, row, CraftModel::CM_FLAG, sourceModel(), parent )){
+    if (!filterAcceptColumn(m_flagFilter, row, CraftModel::CM_FLAG, mdl, parent )){
         return false;
     }
-    if (!filterAcceptColumn(m_registrationFilter, row, CraftModel::CM_REG, sourceModel(), parent )){
+    if (!filterAcceptColumn(m_registrationFilter, row, CraftModel::CM_REG, mdl, parent )){
         return false;
     }
-    if (!filterAcceptColumn(m_squawkFilter, row, CraftModel::CM_SQUAWK, sourceModel(), parent )){
+    if (!filterAcceptColumn(m_squawkFilter, row, CraftModel::CM_SQUAWK, mdl, parent )){
         return false;
     }
 
     if(!m_altMinFilter.isEmpty() || !m_altMaxFilter.isEmpty()){
-        QModelIndex idx = sourceModel()->index(row, CraftModel::CM_ALT, parent);
+        QModelIndex idx = mdl->index(row, CraftModel::CM_ALT, parent);
         bool ok = false;
-        auto alt = sourceModel()->data(idx).toDouble(&ok);
+        auto alt = mdl->data(idx).toDouble(&ok);
         if(ok){
             if(!m_altMinFilter.isEmpty()){
                 auto min = m_altMinFilter.toDouble(&ok);
@@ -69,9 +70,9 @@ bool CraftProxyModel::filterAcceptsRow(int row, const QModelIndex &parent) const
     }
 
     if(!m_speedMinFilter.isEmpty() || !m_speedMaxFilter.isEmpty()){
-        QModelIndex idx = sourceModel()->index(row, CraftModel::CM_SPEED, parent);
+        QModelIndex idx = mdl->index(row, CraftModel::CM_SPEED, parent);
         bool ok = false;
-        auto speed = sourceModel()->data(idx).toDouble(&ok);
+        auto speed = mdl->data(idx).toDouble(&ok);
         if(ok){
             if(!m_speedMinFilter.isEmpty()){
                 auto min = m_speedMinFilter.toDouble(&ok);
@@ -89,9 +90,9 @@ bool CraftProxyModel::filterAcceptsRow(int row, const QModelIndex &parent) const
     }
 
     if(!m_distanceFilter.isEmpty()){
-        QModelIndex idx = sourceModel()->index(row, CraftModel::CM_DIST, parent);
+        QModelIndex idx = mdl->index(row, CraftModel::CM_DIST, parent);
         bool ok = false;
-        auto dist = sourceModel()->data(idx).toDouble(&ok);
+        auto dist = mdl->data(idx).toDouble(&ok);
         if(ok){
             auto db = m_distanceFilter.toDouble(&ok);
             if (ok && dist > db){

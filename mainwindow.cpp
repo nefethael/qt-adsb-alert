@@ -11,6 +11,7 @@
 #include <QUrlQuery>
 #include <QSortFilterProxyModel>
 #include <QSettings>
+#include <QGraphicsEllipseItem>
 
 #define K_REFRESH_PERIOD_MS 10000
 
@@ -119,8 +120,10 @@ void MainWindow::initializeTimers()
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
+    , m_scene(new QGraphicsScene(this))
 {
     ui->setupUi(this);
+    ui->graphicsView->setScene(m_scene);
 
     QSettings settings("setup.ini", QSettings::Format::IniFormat);
     if(settings.status() != QSettings::Status::NoError){
@@ -219,6 +222,70 @@ void MainWindow::replyFinished(QNetworkReply *reply)
         memcpy((void*)&craft, bytes.data()+offset, elementSize);
     }
     getCraftModel()->refreshCraft(craftList);
-
+    refreshScene();
     reply->deleteLater();
+}
+
+void MainWindow::refreshScene()
+{
+    const auto factor = 400.0;
+    const auto size = 10;
+
+    m_scene->clear();
+
+    auto homex = getCraftModel()->getHome().longitude() * factor;
+    auto homey = -getCraftModel()->getHome().latitude() * factor;
+    QRectF homeRect(homex-(size/2), homey-(size/2), size, size);
+    m_scene->addEllipse(homeRect, QPen(Qt::white));
+
+    auto nbCircle = 4;
+    auto circleFactor = (factor/nbCircle);
+    for(auto i = 1; i <= nbCircle; i++){
+        auto circleSize = i*circleFactor;
+        QRectF sceneRect(homex-circleSize, homey-circleSize, 2*circleSize, 2*circleSize);
+        m_scene->addEllipse(sceneRect, QPen(Qt::darkGreen));
+        if(i==4){
+            m_scene->setSceneRect(sceneRect);
+        }
+    }
+
+    auto nbLines = 12;
+    for(auto i = 0; i< nbLines; i++){
+        QLineF angleline;
+        angleline.setP1(QPointF(homex,homey));
+        angleline.setAngle(i*30);
+        angleline.setLength(factor);
+        angleline.setP1(angleline.pointAt(0.9));
+        m_scene->addLine(angleline, QPen(Qt::darkGray));
+        auto ang = (((nbLines-i)*30)+90)%360;
+        auto* text = m_scene->addText(QString::number(ang));
+        text->setPos(angleline.center());
+        text->setDefaultTextColor(Qt::darkGray);
+    }
+
+    for(auto& c: getCraftModel()->getCraft()){
+        QColor color = c.getSendAlert()? QColor(Qt::yellow): QColor(Qt::darkGreen);
+        if(c.getDistanceToMe() < 100000){
+            auto x = c.getPos().longitude() * factor;
+            auto y = -c.getPos().latitude() * factor;
+
+            QRectF aircraftRect(x-(size/2), y-(size/2), size, size);
+            m_scene->addRect(aircraftRect, QPen(color), QBrush(color));
+
+            auto* text = m_scene->addText(QString("%1\n%2 %3\n%4").arg(c.getCallsign()).arg((int)c.getAltitude()/100).arg((int)c.getGS()/10).arg(c.getTypeCode()));
+            text->setPos(x+(4*size), y-(6*size));
+            text->setDefaultTextColor(color);
+
+            QLineF infoLine(QPointF(text->sceneBoundingRect().left(), text->sceneBoundingRect().center().y()), aircraftRect.topRight());
+            m_scene->addLine(infoLine, QPen(color));
+
+            QLineF heading;
+            heading.setP1(aircraftRect.center());
+            heading.setAngle(90-c.getHeading());
+            heading.setLength(size*4);
+            m_scene->addLine(heading, QPen(color));
+        }
+    }
+
+    ui->graphicsView->fitInView( m_scene->sceneRect(), Qt::KeepAspectRatio);
 }

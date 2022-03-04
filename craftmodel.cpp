@@ -51,10 +51,10 @@ Craft::Craft(binCraft & bin, const QJsonDocument &icaoAircraftTypes, const QGeoC
     }
     m_dbFlags = flags;
 
-    QGeoCoordinate aircraft(bin.lat/1e6, bin.lon/1e6, m_altitude*0.3048);
-    auto dist2d =  aircraft.distanceTo(home);
-    m_distanceToMe = std::hypot(dist2d, aircraft.altitude() - home.altitude());
-    m_gettingCloser = qAbs(aircraft.azimuthTo(home) - m_heading);
+    m_pos = QGeoCoordinate(bin.lat/1e6, bin.lon/1e6, m_altitude*0.3048);
+    auto dist2d =  m_pos.distanceTo(home);
+    m_distanceToMe = std::hypot(dist2d, m_pos.altitude() - home.altitude());
+    m_gettingCloser = qAbs(m_pos.azimuthTo(home) - m_heading);
 
     js.globalObject().setProperty("callsign", m_callsign);
     js.globalObject().setProperty("hex", m_hex);
@@ -143,7 +143,7 @@ QVariant CraftModel::data(const QModelIndex &index, int role) const
             return QVariant();
         }
     }else if (role == Qt::BackgroundRole) {
-        QColor color = craft.getDbFlags().isEmpty() ? Qt::white : Qt::yellow;
+        QColor color = craft.getSendAlert() ? Qt::yellow : Qt::white;
         return QBrush(color);
      }
     return QVariant();

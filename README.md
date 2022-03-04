@@ -73,3 +73,11 @@ Exposed variables are
 - squawk
 - distanceToMe
 - gettingCloser
+
+# Releases
+
+For Windows, you can download latest pre-release here:
+ * DLLs https://github.com/nefethael/qt-adsb-alert/releases/download/v0.0.4/qt-adsb-alert-v0.0.4-dll.zip
+ * EXE https://github.com/nefethael/qt-adsb-alert/releases/download/v0.0.4/qt-adsb-alert-v0.0.4-exe.zip
+
+Extract both archives and put EXE files into DLLs folder, it should be ok :)

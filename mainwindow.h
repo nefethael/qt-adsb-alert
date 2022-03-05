@@ -6,8 +6,9 @@
 #include <QNetworkCookieJar>
 #include <QTimer>
 #include <QGraphicsScene>
+#include <QSettings>
 
-#include "craftmodel.h"
+#include "networknotifier.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -33,22 +34,18 @@ private:
     inline CraftModel* getCraftModel();
 
     void initializeTimers();
+    void initializeNotifier(const QSettings &settings);
     void restartConnection();
     void refreshScene();
-    bool sendMail(const Craft & craft);
-    bool sendNotify(const Craft & craft);
 
+    QList<Notifier*> m_notifierList;
     QNetworkAccessManager *m_manager = nullptr;
     QList<QUrl> m_tiles;
     QTimer *m_reqTimer = nullptr;
 
     QGraphicsScene  *m_scene;
+    CraftModel*m_model;
 
     static const QUrl s_mainUrl;
-
-    QString m_userSmtp;
-    QString m_passSmtp;
-    QString m_emailSmtp;
-    QString m_notifyRun;
 };
 #endif // MAINWINDOW_H

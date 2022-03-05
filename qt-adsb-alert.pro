@@ -24,7 +24,8 @@ SOURCES += \
     craftmodel.cpp \
     craftproxymodel.cpp \
     main.cpp \
-    mainwindow.cpp
+    mainwindow.cpp \
+    networknotifier.cpp
 
 HEADERS += \
     Smtp/SmtpMime \
@@ -44,7 +45,8 @@ HEADERS += \
     adsb.h \
     craftmodel.h \
     craftproxymodel.h \
-    mainwindow.h
+    mainwindow.h \
+    networknotifier.h
 
 FORMS += \
     mainwindow.ui

@@ -3,9 +3,7 @@
 #include "adsb.h"
 #include "craftmodel.h"
 #include "craftproxymodel.h"
-
-#include "Smtp/smtpclient.h"
-#include "Smtp/mimetext.h"
+#include "networknotifier.h"
 
 #include <QNetworkReply>
 #include <QNetworkCookie>
@@ -13,7 +11,6 @@
 #include <QRandomGenerator>
 #include <QUrlQuery>
 #include <QSortFilterProxyModel>
-#include <QSettings>
 #include <QGraphicsEllipseItem>
 
 #define K_REFRESH_PERIOD_MS 10000
@@ -81,6 +78,18 @@ void MainWindow::restartConnection()
     m_manager->get(initReq);
 }
 
+void MainWindow::initializeNotifier(const QSettings &settings)
+{
+    m_notifierList.append(new SmtpNotifier(this));
+    m_notifierList.append(new NotifyRunNotifier(this));
+    m_notifierList.append(new PushBulletNotifier(this));
+    m_notifierList.append(new TelegramNotifier(this));
+
+    for(auto & n : m_notifierList){
+        n->setup(settings, m_model);
+    }
+}
+
 void MainWindow::initializeTimers()
 {
     // when init is done
@@ -116,8 +125,6 @@ void MainWindow::initializeTimers()
     cookieTimer->start(86400000);
 }
 
-
-
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
@@ -131,28 +138,22 @@ MainWindow::MainWindow(QWidget *parent)
         qDebug() << "Setup.ini not loaded";
     }
 
-    //smtp
-    m_userSmtp = settings.value("userSmtp").toString();
-    m_passSmtp = settings.value("passSmtp").toString();
-    m_emailSmtp = settings.value("emailSmtp").toString();
     //home
     auto home_lat = settings.value("home_lat").toDouble();
     auto home_lon = settings.value("home_lon").toDouble();
     auto home_alt = settings.value("home_alt").toDouble();
     // globe
     auto tiles = settings.value("tiles").toStringList();
-    // notify.run channel
-    m_notifyRun = settings.value("notifyrun").toString();
 
-    auto* model = new CraftModel(this);
-    model->setHome(QGeoCoordinate(home_lat, home_lon, home_alt));
+    m_model = new CraftModel(this);
+    m_model->setHome(QGeoCoordinate(home_lat, home_lon, home_alt));
 
     for(const auto &k : tiles){
         m_tiles.append(QUrl(QString("https://globe.adsbexchange.com/data/globe_%1.binCraft").arg(k)));
     }
 
     CraftProxyModel *proxyModel = new CraftProxyModel(this);
-    proxyModel->setSourceModel(model);
+    proxyModel->setSourceModel(m_model);
     ui->tableView->setModel(proxyModel);
     ui->tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     ui->tableView->sortByColumn(10, Qt::AscendingOrder);
@@ -188,8 +189,8 @@ MainWindow::MainWindow(QWidget *parent)
     // setup ADSB network manager
     initializeTimers();
 
-    connect(model, &CraftModel::notify, this, &MainWindow::sendMail);
-    connect(model, &CraftModel::notify, this, &MainWindow::sendNotify);
+    // setup notifier
+    initializeNotifier(settings);
 }
 
 MainWindow::~MainWindow()
@@ -206,10 +207,14 @@ void MainWindow::replyFinished(QNetworkReply *reply)
         reply->deleteLater();
         return ;
     }
+    if (reply->operation() == QNetworkAccessManager::PostOperation){
+        reply->deleteLater();
+        return;
+    }
 
     auto bytes = reply->readAll();
     if ((bytes.size() < 7) || (bytes.mid(0,6).toStdString() == "<html>")){
-        qDebug() << "Problem" << reply->errorString();
+        qDebug() << "Unable to read ADSB response" << reply->errorString();
         reply->deleteLater();
         return;
     }
@@ -297,61 +302,4 @@ void MainWindow::refreshScene()
     ui->graphicsView->fitInView( m_scene->sceneRect(), Qt::KeepAspectRatio);
 }
 
-bool MainWindow::sendMail(const Craft & craft)
-{
-    if(m_userSmtp.isEmpty()){
-        qDebug() << "No Smtp information, don't notify!" << craft.getHex();
-        return false;
-    }
 
-    QString str = QString("alt=%1 callsign=%2 flags=%3 dist=%4 gs=%5 hdg=%6 icao=%7 reg=%8 squawk=%9 type=%10 desc=%11\n")
-        .arg(craft.getAltitude())
-        .arg(craft.getCallsign())
-        .arg(craft.getDbFlags())
-        .arg(craft.getDistanceToMe())
-        .arg(craft.getGS())
-        .arg(craft.getHeading())
-        .arg(craft.getHex())
-        .arg(craft.getReg())
-        .arg(craft.getSquawk())
-        .arg(craft.getTypeCode())
-        .arg(craft.getTypeDesc());
-
-    SmtpClient smtp("smtp.gmail.com", 587, SmtpClient::TlsConnection);
-    smtp.setUser(m_emailSmtp);
-    smtp.setPassword(m_passSmtp);
-
-    MimeMessage message;
-    message.setSender(new EmailAddress(m_emailSmtp, m_userSmtp));
-    message.addRecipient(new EmailAddress(m_emailSmtp, m_userSmtp));
-    message.setSubject(QString("ADSB ALERT %1").arg(craft.getTypeCode()));
-
-    MimeText text;
-    text.setText(str);
-    message.addPart(&text);
-
-    smtp.connectToHost();
-    smtp.login();
-    bool ok = smtp.sendMail(message);
-    smtp.quit();
-    return ok;
-}
-
-bool MainWindow::sendNotify(const Craft & craft)
-{
-    if(m_notifyRun.isEmpty()){
-        qDebug() << "No Notify.run information, don't notify!" << craft.getHex();
-        return false;
-    }
-
-    QString str = QString("ALERT ADSB %1 %2\n")
-        .arg(craft.getCallsign())
-        .arg(craft.getTypeCode());
-
-    QNetworkRequest req;
-    req.setUrl(QString("https://notify.run/%1").arg(m_notifyRun));
-    req.setHeader(QNetworkRequest::ContentTypeHeader, "application/x-www-form-urlencoded");
-    m_manager->post(req, str.toUtf8());
-
-    return true;
-}

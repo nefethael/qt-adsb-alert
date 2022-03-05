@@ -4,6 +4,14 @@ qt-adsb-alert fetches informations from ADS-B exchange website and sends a mail 
 
 **WARNING It's an ongoing project, use at your own risk ;)**
 
+# Releases
+
+For Windows, you can download latest pre-release (v0.0.5) here:
+ * DLLs https://github.com/nefethael/qt-adsb-alert/releases/download/v0.0.4/qt-adsb-alert-v0.0.4-dll.zip
+ * EXE https://github.com/nefethael/qt-adsb-alert/releases/download/v0.0.4/qt-adsb-alert-v0.0.5-exe.zip
+
+Extract both archives and put EXE files into DLLs folder, it should be ok :)
+
 # Dependencies
 
 * OpenSSL for HTTPS (on windows you need libcrypto-1_1-x64.dll and libssl-1_1-x64.dll)
@@ -30,6 +38,27 @@ In following example, commenting userSmtp disables email notification.
 You can also by notified by https://notify.run, you need to create a channel and then put the name channel in setup file (commenting disabled this notify system)
 
     ;notifyrun=lnW0LiQwmGKZNtheTkIm
+
+* Pushbullet
+
+You can be notified by https://www.pushbullet.com/, you need to create an "Access Token" in settings.
+
+    ;pushbullet_user=adsb.spotter.fan@gmail.com
+    ;pushbullet_token=o.ABC
+    
+* Telegram
+
+You can be notified by Telegram, you need to:
+
+1. create a channel
+2. create a bot (send a message to @BotFather and follow instruction) and save token
+3. invite bot in channel
+4. retrieve chat id [see here](https://www.alphr.com/find-chat-id-telegram/)
+
+Then complete setup.ini with corresponding informations:
+
+    ;telegram_token=123:ABC
+    ;telegram_chat=-666
 
 * Home location
 
@@ -74,10 +103,4 @@ Exposed variables are
 - distanceToMe
 - gettingCloser
 
-# Releases
 
-For Windows, you can download latest pre-release here:
- * DLLs https://github.com/nefethael/qt-adsb-alert/releases/download/v0.0.4/qt-adsb-alert-v0.0.4-dll.zip
- * EXE https://github.com/nefethael/qt-adsb-alert/releases/download/v0.0.4/qt-adsb-alert-v0.0.4-exe.zip
-
-Extract both archives and put EXE files into DLLs folder, it should be ok :)

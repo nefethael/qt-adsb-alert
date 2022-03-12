@@ -6,8 +6,54 @@
 #include <QGeoCoordinate>
 #include <QSet>
 #include <QJSEngine>
+#include <bitset>
 
 #include "adsb.h"
+
+enum CraftValidity{
+    CraftValidity_pad73 = 3,
+    CraftValidity_callsign_valid = CraftValidity_pad73,
+    CraftValidity_baro_alt_valid,
+    CraftValidity_geom_alt_valid,
+    CraftValidity_position_valid,
+    CraftValidity_gs_valid,
+    CraftValidity_pad74,
+    CraftValidity_ias_valid = CraftValidity_pad74,
+    CraftValidity_tas_valid,
+    CraftValidity_mach_valid,
+    CraftValidity_track_valid,
+    CraftValidity_track_rate_valid,
+    CraftValidity_roll_valid,
+    CraftValidity_mag_heading_valid,
+    CraftValidity_true_heading_valid,
+    CraftValidity_pad75,
+    CraftValidity_baro_rate_valid = CraftValidity_pad75,
+    CraftValidity_geom_rate_valid,
+    CraftValidity_nic_a_valid,
+    CraftValidity_nic_c_valid,
+    CraftValidity_nic_baro_valid,
+    CraftValidity_nac_p_valid,
+    CraftValidity_nac_v_valid,
+    CraftValidity_sil_valid,
+    CraftValidity_pad76,
+    CraftValidity_gva_valid = CraftValidity_pad76,
+    CraftValidity_sda_valid,
+    CraftValidity_squawk_valid,
+    CraftValidity_emergency_valid,
+    CraftValidity_spi_valid,
+    CraftValidity_nav_qnh_valid,
+    CraftValidity_nav_altitude_mcp_valid,
+    CraftValidity_nav_altitude_fms_valid,
+    CraftValidity_pad77,
+    CraftValidity_nav_altitude_src_valid = CraftValidity_pad77,
+    CraftValidity_nav_heading_valid,
+    CraftValidity_nav_modes_valid,
+    CraftValidity_alert_valid,
+    CraftValidity_wind_valid,
+    CraftValidity_temp_valid,
+    CraftValidity_LAST,
+};
+
 
 class Craft
 {
@@ -33,6 +79,19 @@ public:
     inline auto getSeen() const { return m_seen;  }
     inline auto getLastRefresh() const { return m_lastRefresh;  }
     inline auto getPos() const { return m_pos; }
+    inline bool getValidity(CraftValidity type) const{
+        if(type < CraftValidity_pad74){
+            return m_pad73.test(type);
+        }else if(type < CraftValidity_pad75){
+            return m_pad74.test(type-CraftValidity_pad74);
+        }else if(type < CraftValidity_pad76){
+            return m_pad75.test(type-CraftValidity_pad75);
+        }else if(type < CraftValidity_pad77){
+            return m_pad76.test(type-CraftValidity_pad76);
+        }else{
+            return m_pad77.test(type-CraftValidity_pad77);
+        }
+    }
 
 private:
     QString m_callsign;
@@ -53,6 +112,12 @@ private:
     float m_seen = 0.0;
     qint64 m_lastRefresh;
     QGeoCoordinate m_pos;
+
+    std::bitset<8> m_pad73;
+    std::bitset<8> m_pad74;
+    std::bitset<8> m_pad75;
+    std::bitset<8> m_pad76;
+    std::bitset<8> m_pad77;
 };
 
 class CraftModel : public QAbstractTableModel

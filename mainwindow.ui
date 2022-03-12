@@ -120,7 +120,7 @@
            </brush>
           </property>
           <property name="interactive">
-           <bool>false</bool>
+           <bool>true</bool>
           </property>
          </widget>
         </item>

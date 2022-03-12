@@ -132,6 +132,13 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
     ui->graphicsView->setScene(m_scene);
+    connect(m_scene, &QGraphicsScene::focusItemChanged, this,
+            [this](QGraphicsItem *newFocus, QGraphicsItem *, Qt::FocusReason){
+        if(newFocus){
+            QAbstractGraphicsShapeItem* item = dynamic_cast<QAbstractGraphicsShapeItem*>(newFocus);
+            item->setBrush(QBrush(Qt::red));
+        }
+    });
 
     QSettings settings("setup.ini", QSettings::Format::IniFormat);
     if(settings.status() != QSettings::Status::NoError){
@@ -276,26 +283,36 @@ void MainWindow::refreshScene()
     }
 
     for(auto& c: getCraftModel()->getCraft()){
-        QColor color = c.getSendAlert()? QColor(Qt::yellow): QColor(Qt::darkGreen);
+        QColor color =  QColor(Qt::darkGreen);
+        if(c.getSendAlert()){
+            color = QColor(Qt::yellow);
+        }else if(c.getSeen() > 120){
+            color = QColor(0, 50, 10);
+        }
         if(c.getDistanceToMe() < 100000){
             auto x = c.getPos().longitude() * factor;
             auto y = -c.getPos().latitude() * factor;
 
             QRectF aircraftRect(x-(size/2), y-(size/2), size, size);
-            m_scene->addRect(aircraftRect, QPen(color), QBrush(color));
+            m_scene->addRect(aircraftRect, QPen(color), QBrush(color))->setFlag(QGraphicsItem::ItemIsFocusable);
 
             auto* text = m_scene->addText(QString("%1\n%2 %3\n%4").arg(c.getCallsign()).arg((int)c.getAltitude()/100).arg((int)c.getGS()/10).arg(c.getTypeCode()));
             text->setPos(x+(4*size), y-(6*size));
             text->setDefaultTextColor(color);
+            text->setFlag(QGraphicsItem::ItemIsMovable);
+
+
 
             QLineF infoLine(QPointF(text->sceneBoundingRect().left(), text->sceneBoundingRect().center().y()), aircraftRect.topRight());
             m_scene->addLine(infoLine, QPen(color));
 
-            QLineF heading;
-            heading.setP1(aircraftRect.center());
-            heading.setAngle(90-c.getHeading());
-            heading.setLength(size*4);
-            m_scene->addLine(heading, QPen(color));
+            if(c.getValidity(CraftValidity_true_heading_valid)){
+                QLineF heading;
+                heading.setP1(aircraftRect.center());
+                heading.setAngle(90-c.getHeading());
+                heading.setLength(size*4);
+                m_scene->addLine(heading, QPen(color));
+            }
         }
     }
 

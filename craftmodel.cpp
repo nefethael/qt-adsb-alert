@@ -7,6 +7,7 @@
 #include <QColor>
 #include <QBrush>
 #include <QDateTime>
+#include <bitset>
 
 static QString stringFromChars(char* array, int size)
 {
@@ -33,6 +34,21 @@ Craft::Craft(binCraft & bin, const QJsonDocument &icaoAircraftTypes, const QGeoC
     m_squawk = QString("%1").arg(bin.squawk, 8, 16).toUpper().trimmed();
     m_seen = bin.seen / 10;
     m_lastRefresh = QDateTime::currentSecsSinceEpoch();
+
+    m_pad73 = bin.pad73;
+    m_pad74 = bin.pad74;
+    m_pad75 = bin.pad75;
+    m_pad76 = bin.pad76;
+    m_pad77 = bin.pad77;
+
+    qDebug() << m_pad73.to_string().c_str();
+    qDebug() << m_pad74.to_string().c_str();
+    qDebug() << m_pad75.to_string().c_str();
+    qDebug() << m_pad76.to_string().c_str();
+    qDebug() << m_pad77.to_string().c_str();
+    for(int i = CraftValidity_pad73; i < CraftValidity_LAST; i++){
+        qDebug() << getValidity(static_cast<CraftValidity>(i));
+    }
 
     QString flags;
     if (bin.dbFlags & 1){

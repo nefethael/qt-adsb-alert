@@ -2,22 +2,15 @@
 
 qt-adsb-alert fetches informations from ADS-B exchange website and sends a mail when interesting planes are near home 
 
-**WARNING It's an ongoing project, use at your own risk ;)**
 
 # Releases
 
-For Windows, you can download latest pre-release (v0.0.5) here:
+For Windows, you can download latest release (v0.0.6) here:
  * DLLs https://github.com/nefethael/qt-adsb-alert/releases/download/v0.0.4/qt-adsb-alert-v0.0.4-dll.zip
- * EXE https://github.com/nefethael/qt-adsb-alert/releases/download/v0.0.5/qt-adsb-alert-v0.0.5-exe.zip
+ * EXE https://github.com/nefethael/qt-adsb-alert/releases/download/v0.0.5/qt-adsb-alert-v0.0.6-exe.zip
 
 Extract both archives and put EXE files into DLLs folder, it should be ok :)
 
-# Dependencies
-
-* OpenSSL for HTTPS (on windows you need libcrypto-1_1-x64.dll and libssl-1_1-x64.dll)
-* https://github.com/bluetiger9/SmtpClient-for-Qt included at commit 3fa4a0fe5797
-* https://github.com/wiedehopf/tar1090-db/blob/master/db/icao_aircraft_types2.js included at commit bb59b7144a
-* https://github.com/wiedehopf/readsb for binary structures
 
 # Settings
 
@@ -102,5 +95,13 @@ Exposed variables are
 - squawk
 - distanceToMe
 - gettingCloser
+
+# Dependencies & Thanks
+
+* OpenSSL for HTTPS (on windows you need libcrypto-1_1-x64.dll and libssl-1_1-x64.dll)
+* https://github.com/bluetiger9/SmtpClient-for-Qt included at commit 3fa4a0fe5797
+* https://github.com/wiedehopf/tar1090-db/blob/master/db/icao_aircraft_types2.js included at commit bb59b7144a
+* https://github.com/wiedehopf/readsb for binary structures
+
 
 

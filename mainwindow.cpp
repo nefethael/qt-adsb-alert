@@ -103,7 +103,7 @@ void MainWindow::initializeTimers()
         m_reqTimer = new QTimer(this);
         connect(m_reqTimer, &QTimer::timeout, this, [this](){
             if(!m_manager) {
-                qDebug() << "Manager is not ready yet.";
+                qInfo() << "Manager is not ready yet.";
             }
             getCraftModel()->clearCraft();
 
@@ -135,7 +135,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     QSettings settings("setup.ini", QSettings::Format::IniFormat);
     if(settings.status() != QSettings::Status::NoError){
-        qDebug() << "Setup.ini not loaded";
+        qCritical() << "Setup.ini not loaded";
     }
 
     //home
@@ -214,7 +214,7 @@ void MainWindow::replyFinished(QNetworkReply *reply)
 
     auto bytes = reply->readAll();
     if ((bytes.size() < 7) || (bytes.mid(0,6).toStdString() == "<html>")){
-        qDebug() << "Unable to read ADSB response" << reply->errorString();
+        qCritical() << "Unable to read ADSB response" << reply->errorString();
         reply->deleteLater();
         return;
     }
@@ -225,7 +225,7 @@ void MainWindow::replyFinished(QNetworkReply *reply)
     struct binHeader hdr;
     memcpy((void*)&hdr, bytes.data(), sizeof(struct binHeader));
 
-    qDebug() << nbCraft <<  " aircrafts fetched at " << QDateTime::currentDateTime().toString() ;
+    qInfo() << nbCraft <<  " aircrafts fetched at " << QDateTime::currentDateTime().toString() ;
 
     QVector<struct binCraft> craftList(nbCraft);
     for(auto i = 0; i < nbCraft; i++){
@@ -276,7 +276,12 @@ void MainWindow::refreshScene()
     }
 
     for(auto& c: getCraftModel()->getCraft()){
-        QColor color = c.getSendAlert()? QColor(Qt::yellow): QColor(Qt::darkGreen);
+        QColor color =  QColor(Qt::darkGreen);
+        if(c.getSendAlert()){
+            color = QColor(Qt::yellow);
+        }else if(c.getSeen() > 120){
+            color = QColor(0, 50, 10);
+        }
         if(c.getDistanceToMe() < 100000){
             auto x = c.getPos().longitude() * factor;
             auto y = -c.getPos().latitude() * factor;
@@ -288,14 +293,17 @@ void MainWindow::refreshScene()
             text->setPos(x+(4*size), y-(6*size));
             text->setDefaultTextColor(color);
 
+
             QLineF infoLine(QPointF(text->sceneBoundingRect().left(), text->sceneBoundingRect().center().y()), aircraftRect.topRight());
             m_scene->addLine(infoLine, QPen(color));
 
-            QLineF heading;
-            heading.setP1(aircraftRect.center());
-            heading.setAngle(90-c.getHeading());
-            heading.setLength(size*4);
-            m_scene->addLine(heading, QPen(color));
+            if(c.getValidity(CraftValidity_true_heading_valid)){
+                QLineF heading;
+                heading.setP1(aircraftRect.center());
+                heading.setAngle(90-c.getHeading());
+                heading.setLength(size*4);
+                m_scene->addLine(heading, QPen(color));
+            }
         }
     }
 

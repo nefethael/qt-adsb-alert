@@ -21,7 +21,7 @@ void SmtpNotifier::setup(const QSettings & settings, CraftModel * origin)
     m_emailSmtp = settings.value("emailSmtp").toString();
 
     if(m_userSmtp.isEmpty()){
-        qDebug() << "No Smtp information, don't notify!";
+        qInfo() << "No Smtp information, don't notify!";
     }else{
         connect(origin, &CraftModel::notify, this, &SmtpNotifier::sendNotification);
     }
@@ -67,7 +67,7 @@ void NotifyRunNotifier::setup(const QSettings & settings, CraftModel * origin)
     m_notifyRun = settings.value("notifyrun").toString();
 
     if(m_notifyRun.isEmpty()){
-        qDebug() << "No NotifyRun information, don't notify!";
+        qInfo() << "No NotifyRun information, don't notify!";
     }else{
         connect(origin, &CraftModel::notify, this, &NotifyRunNotifier::sendNotification);
     }
@@ -93,7 +93,7 @@ void TelegramNotifier::setup(const QSettings & settings, CraftModel * origin)
     m_telegramToken = settings.value("telegram_token").toString();
 
     if(m_telegramToken.isEmpty()){
-        qDebug() << "No Telegram information, don't notify!";
+        qInfo() << "No Telegram information, don't notify!";
     }else{
         connect(origin, &CraftModel::notify, this, &TelegramNotifier::sendNotification);
     }
@@ -101,12 +101,15 @@ void TelegramNotifier::setup(const QSettings & settings, CraftModel * origin)
 
 bool TelegramNotifier::sendNotification(const Craft & craft)
 {
-    QString str = QString("{\"chat_id\":\"%1\", \"text\": \"ALERT ADSB %2 %3\"}")
-        .arg(m_telegramChat)
+    QString text = QString("[%1](https://globe.adsbexchange.com/?icao=%1) \\| Type:*%2* \\| Callsign:`%3` \\| Reg:`%4`\n")
+        .arg(craft.getHex())
+        .arg(craft.getTypeCode())
         .arg(craft.getCallsign())
-        .arg(craft.getTypeCode());
+        .arg(craft.getReg());
 
-    qDebug() << str;;
+    QString str = QString("{\"chat_id\":\"%1\", \"text\": \"%2\", \"disable_web_page_preview\": \"true\", \"parse_mode\": \"Markdown\" }")
+        .arg(m_telegramChat)
+        .arg(text);
 
     QNetworkRequest req;
     req.setUrl(QString("https://api.telegram.org/bot%1/sendMessage").arg(m_telegramToken));
@@ -122,7 +125,7 @@ void PushBulletNotifier::setup(const QSettings & settings, CraftModel * origin)
     m_pushBulletToken = settings.value("pushbullet_token").toString();
 
     if(m_pushBulletToken.isEmpty()){
-        qDebug() << "No PushBullet information, don't notify!";
+        qInfo() << "No PushBullet information, don't notify!";
     }else{
         connect(origin, &CraftModel::notify, this, &PushBulletNotifier::sendNotification);
     }
@@ -147,7 +150,7 @@ bool PushBulletNotifier::sendNotification(const Craft & craft)
 void Notifier::replyFinished(QNetworkReply *reply)
 {
     if (reply->operation() == QNetworkAccessManager::PostOperation){
-        qDebug() << "Post OK for" << reply->request().url();
+        qInfo() << "Post OK for" << reply->request().url();
     }
     reply->deleteLater();
 }

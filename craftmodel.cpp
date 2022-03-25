@@ -7,20 +7,21 @@
 #include <QColor>
 #include <QBrush>
 #include <QDateTime>
+#include <bitset>
 
 static QString stringFromChars(char* array, int size)
 {
     if(array[0] == '\0'){
         return "N/A";
     }
-    return QString::fromLocal8Bit(array, size).trimmed();
+    return QString::fromLocal8Bit(array, size).trimmed().remove(QChar('\u0000'));
 }
 
 
 Craft::Craft(binCraft & bin, const QJsonDocument &icaoAircraftTypes, const QGeoCoordinate & home, QJSEngine & js)
 {
     m_callsign = stringFromChars((char*)bin.callsign, 8);
-    m_hex = QString("%1").arg(bin.hex, 8, 16).toUpper().trimmed();
+    m_hex = QString("%1").arg(bin.hex, 8, 16, QLatin1Char('0')).toUpper().trimmed();
     m_typeCode = stringFromChars((char*)bin.typeCode, 4);
     m_typeDesc = icaoAircraftTypes[m_typeCode][1].toString();
     m_dbFlags = bin.dbFlags;
@@ -33,6 +34,12 @@ Craft::Craft(binCraft & bin, const QJsonDocument &icaoAircraftTypes, const QGeoC
     m_squawk = QString("%1").arg(bin.squawk, 8, 16).toUpper().trimmed();
     m_seen = bin.seen / 10;
     m_lastRefresh = QDateTime::currentSecsSinceEpoch();
+
+    m_pad73 = bin.pad73;
+    m_pad74 = bin.pad74;
+    m_pad75 = bin.pad75;
+    m_pad76 = bin.pad76;
+    m_pad77 = bin.pad77;
 
     QString flags;
     if (bin.dbFlags & 1){
@@ -74,7 +81,7 @@ Craft::Craft(binCraft & bin, const QJsonDocument &icaoAircraftTypes, const QGeoC
     QJSValue result = sendAlertFunction.call();
 
     if (result.isError()){
-        qDebug()
+        qCritical()
                 << "Uncaught exception at line"
                 << result.property("lineNumber").toInt()
                 << ":" << result.toString();

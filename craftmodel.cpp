@@ -21,7 +21,7 @@ static QString stringFromChars(char* array, int size)
 Craft::Craft(binCraft & bin, const QJsonDocument &icaoAircraftTypes, const QGeoCoordinate & home, QJSEngine & js)
 {
     m_callsign = stringFromChars((char*)bin.callsign, 8);
-    m_hex = QString("%1").arg(bin.hex, 8, 16, QLatin1Char('0')).toUpper().trimmed();
+    m_hex = QString("%1").arg(bin.hex, 6, 16, QLatin1Char('0')).toUpper().trimmed();
     m_typeCode = stringFromChars((char*)bin.typeCode, 4);
     m_typeDesc = icaoAircraftTypes[m_typeCode][1].toString();
     m_dbFlags = bin.dbFlags;

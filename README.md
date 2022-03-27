@@ -5,11 +5,8 @@ qt-adsb-alert fetches informations from ADS-B exchange website and sends a mail 
 
 # Releases
 
-For Windows, you can download latest release (v0.0.6) here:
- * DLLs https://github.com/nefethael/qt-adsb-alert/releases/download/v0.0.4/qt-adsb-alert-v0.0.4-dll.zip
- * EXE https://github.com/nefethael/qt-adsb-alert/releases/download/v0.0.5/qt-adsb-alert-v0.0.6-exe.zip
-
-Extract both archives and put EXE files into DLLs folder, it should be ok :)
+For Windows, you can download latest release (v1.0.0) here:
+ * https://github.com/nefethael/qt-adsb-alert/releases/download/v1.0.0/qt-adsb-alert-v1.0.0.zip
 
 
 # Settings

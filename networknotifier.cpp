@@ -1,6 +1,4 @@
 #include "networknotifier.h"
-#include "Smtp/smtpclient.h"
-#include "Smtp/mimetext.h"
 #include <QNetworkReply>
 
 Notifier::Notifier(QObject * parent) : QObject(parent)
@@ -12,54 +10,6 @@ Notifier::Notifier(QObject * parent) : QObject(parent)
 Notifier::~Notifier()
 {
     delete m_manager;
-}
-
-void SmtpNotifier::setup(const QSettings & settings, CraftModel * origin)
-{
-    m_userSmtp = settings.value("userSmtp").toString();
-    m_passSmtp = settings.value("passSmtp").toString();
-    m_emailSmtp = settings.value("emailSmtp").toString();
-
-    if(m_userSmtp.isEmpty()){
-        qInfo() << "No Smtp information, don't notify!";
-    }else{
-        connect(origin, &CraftModel::notify, this, &SmtpNotifier::sendNotification);
-    }
-}
-
-bool SmtpNotifier::sendNotification(const Craft & craft)
-{
-    QString str = QString("alt=%1 callsign=%2 flags=%3 dist=%4 gs=%5 hdg=%6 icao=%7 reg=%8 squawk=%9 type=%10 desc=%11\n")
-        .arg(craft.getAltitude())
-        .arg(craft.getCallsign())
-        .arg(craft.getDbFlags())
-        .arg(craft.getDistanceToMe())
-        .arg(craft.getGS())
-        .arg(craft.getHeading())
-        .arg(craft.getHex())
-        .arg(craft.getReg())
-        .arg(craft.getSquawk())
-        .arg(craft.getTypeCode())
-        .arg(craft.getTypeDesc());
-
-    SmtpClient smtp("smtp.gmail.com", 587, SmtpClient::TlsConnection);
-    smtp.setUser(m_emailSmtp);
-    smtp.setPassword(m_passSmtp);
-
-    MimeMessage message;
-    message.setSender(new EmailAddress(m_emailSmtp, m_userSmtp));
-    message.addRecipient(new EmailAddress(m_emailSmtp, m_userSmtp));
-    message.setSubject(QString("ADSB ALERT %1").arg(craft.getTypeCode()));
-
-    MimeText text;
-    text.setText(str);
-    message.addPart(&text);
-
-    smtp.connectToHost();
-    smtp.login();
-    bool ok = smtp.sendMail(message);
-    smtp.quit();
-    return ok;
 }
 
 void NotifyRunNotifier::setup(const QSettings & settings, CraftModel * origin)

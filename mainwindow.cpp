@@ -4,6 +4,7 @@
 #include "craftmodel.h"
 #include "craftproxymodel.h"
 #include "networknotifier.h"
+#include "zstdframe.h"
 
 #include <QNetworkReply>
 #include <QNetworkCookie>
@@ -80,7 +81,6 @@ void MainWindow::restartConnection()
 
 void MainWindow::initializeNotifier(const QSettings &settings)
 {
-    m_notifierList.append(new SmtpNotifier(this));
     m_notifierList.append(new NotifyRunNotifier(this));
     m_notifierList.append(new PushBulletNotifier(this));
     m_notifierList.append(new TelegramNotifier(this));
@@ -143,14 +143,12 @@ MainWindow::MainWindow(QWidget *parent)
     auto home_lon = settings.value("home_lon").toDouble();
     auto home_alt = settings.value("home_alt").toDouble();
     // globe
-    auto tiles = settings.value("tiles").toStringList();
+    auto box = settings.value("box").toStringList().join(',');
 
     m_model = new CraftModel(this);
     m_model->setHome(QGeoCoordinate(home_lat, home_lon, home_alt));
 
-    for(const auto &k : tiles){
-        m_tiles.append(QUrl(QString("https://globe.adsbexchange.com/data/globe_%1.binCraft").arg(k)));
-    }
+    m_tiles.append(QUrl(QString("https://globe.adsbexchange.com/re-api/?binCraft&zstd&box=%1").arg(box)));
 
     CraftProxyModel *proxyModel = new CraftProxyModel(this);
     proxyModel->setSourceModel(m_model);
@@ -212,18 +210,21 @@ void MainWindow::replyFinished(QNetworkReply *reply)
         return;
     }
 
-    auto bytes = reply->readAll();
-    if ((bytes.size() < 7) || (bytes.mid(0,6).toStdString() == "<html>")){
+    auto encryptedBytes = reply->readAll();
+    if ((encryptedBytes.size() < 7) || (encryptedBytes.mid(0,6).toStdString() == "<html>")){
         qCritical() << "Unable to read ADSB response" << reply->errorString();
         reply->deleteLater();
         return;
     }
 
+    ZSTDFrame f(encryptedBytes);
+    auto finalBytes = f.extract();
+
     auto elementSize = (int)sizeof(struct binCraft);
-    auto nbCraft = (bytes.count() / elementSize) - 1;
+    auto nbCraft = (finalBytes.count() / elementSize) - 1;
 
     struct binHeader hdr;
-    memcpy((void*)&hdr, bytes.data(), sizeof(struct binHeader));
+    memcpy((void*)&hdr, finalBytes.data(), sizeof(struct binHeader));
 
     qInfo() << nbCraft <<  " aircrafts fetched at " << QDateTime::currentDateTime().toString() ;
 
@@ -231,10 +232,11 @@ void MainWindow::replyFinished(QNetworkReply *reply)
     for(auto i = 0; i < nbCraft; i++){
         auto & craft = craftList[i];
         auto offset = (i * elementSize) + elementSize;
-        memcpy((void*)&craft, bytes.data()+offset, elementSize);
+        memcpy((void*)&craft, finalBytes.data()+offset, elementSize);
     }
     getCraftModel()->refreshCraft(craftList);
     refreshScene();
+
     reply->deleteLater();
 }
 

@@ -20,21 +20,6 @@ protected:
     QNetworkAccessManager *m_manager = nullptr;
 };
 
-class SmtpNotifier : public Notifier
-{
-    Q_OBJECT
-public:
-    SmtpNotifier(QObject * parent = nullptr) : Notifier(parent){};
-
-    virtual bool sendNotification(const Craft & craft) override;
-    virtual void setup(const QSettings & settings, CraftModel * origin) override;
-
-private:
-    QString m_userSmtp;
-    QString m_passSmtp;
-    QString m_emailSmtp;
-};
-
 class NotifyRunNotifier : public Notifier
 {
     Q_OBJECT

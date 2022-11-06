@@ -51,11 +51,12 @@ void TelegramNotifier::setup(const QSettings & settings, CraftModel * origin)
 
 bool TelegramNotifier::sendNotification(const Craft & craft)
 {
-    QString text = QString("[%1](https://globe.adsbexchange.com/?icao=%1) \\| Type:*%2* \\| Callsign:`%3` \\| Reg:`%4`\n")
+    QString text = QString("[%1](https://globe.adsbexchange.com/?icao=%1) \\| Type:*%2* \\| Callsign:`%3` \\| Reg:`%4` \\| FL:`%5`\n")
         .arg(craft.getHex())
         .arg(craft.getTypeCode())
         .arg(craft.getCallsign())
-        .arg(craft.getReg());
+        .arg(craft.getReg())
+        .arg(craft.getAltitude()/100);
 
     QString str = QString("{\"chat_id\":\"%1\", \"text\": \"%2\", \"disable_web_page_preview\": \"true\", \"parse_mode\": \"Markdown\" }")
         .arg(m_telegramChat)

@@ -214,6 +214,10 @@ void MainWindow::replyFinished(QNetworkReply *reply)
     if ((encryptedBytes.size() < 7) || (encryptedBytes.mid(0,6).toStdString() == "<html>")){
         qCritical() << "Unable to read ADSB response" << reply->errorString();
         reply->deleteLater();
+
+        // if a response fails, restart it
+        QTimer::singleShot(1000, [this]() { restartConnection(); } );
+
         return;
     }
 

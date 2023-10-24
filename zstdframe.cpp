@@ -27,6 +27,7 @@ QByteArray ZSTDFrame::extract()
 {
     QByteArray decrypt(m_encryptedBytes);
 
+    /*
     uint32_t key = read32((unsigned char*)&m_encryptedBytes.data()[0]);
     write32((unsigned char*)decrypt.data(), 0x28b52ffd);
 
@@ -35,6 +36,7 @@ QByteArray ZSTDFrame::extract()
         tmp = (tmp ^ key) ^ 0x5132c744;
         write32((unsigned char*)&(decrypt.data()[i]), tmp);
     }
+    */
 
     auto newSize = ZSTD_findDecompressedSize(decrypt.data(), decrypt.size());
 

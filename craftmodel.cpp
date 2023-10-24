@@ -34,6 +34,7 @@ Craft::Craft(binCraft & bin, const QJsonDocument &icaoAircraftTypes, const QGeoC
     m_squawk = QString("%1").arg(bin.squawk, 8, 16).toUpper().trimmed();
     m_seen = bin.seen / 10.0;
     m_lastRefresh = QDateTime::currentSecsSinceEpoch();
+    m_category = QString("%1").arg((uchar)bin.category, 2, 16, QLatin1Char('0')).toUpper().trimmed();
 
     m_pad73 = bin.pad73;
     m_pad74 = bin.pad74;
@@ -76,6 +77,7 @@ Craft::Craft(binCraft & bin, const QJsonDocument &icaoAircraftTypes, const QGeoC
     js.globalObject().setProperty("distanceToMe", m_distanceToMe);
     js.globalObject().setProperty("gettingCloser", m_gettingCloser);
     js.globalObject().setProperty("seen", m_seen);
+    js.globalObject().setProperty("cat", m_category);
 
     QJSValue module = js.importModule("./sendAlert.mjs");
     QJSValue sendAlertFunction = module.property("sendAlert");

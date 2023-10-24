@@ -79,6 +79,7 @@ public:
     inline auto getSeen() const { return m_seen;  }
     inline auto getLastRefresh() const { return m_lastRefresh;  }
     inline auto getPos() const { return m_pos; }
+    inline auto getCategory() const { return m_category; }
     inline bool getValidity(CraftValidity type) const{
         if(type < CraftValidity_pad74){
             return m_pad73.test(type);
@@ -112,6 +113,7 @@ private:
     float m_seen = 0.0;
     qint64 m_lastRefresh;
     QGeoCoordinate m_pos;
+    QString m_category;
 
     std::bitset<8> m_pad73;
     std::bitset<8> m_pad74;

@@ -227,19 +227,21 @@ void MainWindow::replyFinished(QNetworkReply *reply)
     auto elementSize = (int)sizeof(struct binCraft);
     auto nbCraft = (finalBytes.count() / elementSize) - 1;
 
-    struct binHeader hdr;
-    memcpy((void*)&hdr, finalBytes.data(), sizeof(struct binHeader));
-
     qInfo() << nbCraft <<  " aircrafts fetched at " << QDateTime::currentDateTime().toString() ;
 
-    QVector<struct binCraft> craftList(nbCraft);
-    for(auto i = 0; i < nbCraft; i++){
-        auto & craft = craftList[i];
-        auto offset = (i * elementSize) + elementSize;
-        memcpy((void*)&craft, finalBytes.data()+offset, elementSize);
+    if(nbCraft > 0){
+        struct binHeader hdr;
+        memcpy((void*)&hdr, finalBytes.data(), sizeof(struct binHeader));
+
+        QVector<struct binCraft> craftList(nbCraft);
+        for(auto i = 0; i < nbCraft; i++){
+            auto & craft = craftList[i];
+            auto offset = (i * elementSize) + elementSize;
+            memcpy((void*)&craft, finalBytes.data()+offset, elementSize);
+        }
+        getCraftModel()->refreshCraft(craftList);
+        refreshScene();
     }
-    getCraftModel()->refreshCraft(craftList);
-    refreshScene();
 
     reply->deleteLater();
 }

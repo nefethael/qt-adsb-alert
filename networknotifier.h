@@ -58,6 +58,7 @@ public:
 private:
     QString m_telegramChat;
     QString m_telegramToken;
+    QMap<AlertLevel, QString> m_telegramIndicator;
 };
 
 #endif // NETWORKNOTIFIER_H

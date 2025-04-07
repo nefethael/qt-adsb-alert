@@ -9,6 +9,8 @@
 #include <QDateTime>
 #include <bitset>
 
+#include "countries.h"
+
 static QString stringFromChars(char* array, int size)
 {
     if(array[0] == '\0'){
@@ -62,6 +64,14 @@ Craft::Craft(binCraft & bin, const QJsonDocument &icaoAircraftTypes, const QGeoC
     m_distanceToMe = std::hypot(dist2d, m_pos.altitude() - home.altitude());
     m_gettingCloser = qAbs(m_pos.azimuthTo(home) - m_heading);
 
+    m_country = "Unknown";
+    for (auto & l : ICAO_Ranges) {
+        if ((bin.hex <= l.max) && (bin.hex >= l.min)) {
+            m_country = l.country;
+            break;
+        }
+    }
+
     js.globalObject().setProperty("callsign", m_callsign);
     js.globalObject().setProperty("hex", m_hex);
     js.globalObject().setProperty("typeCode", m_typeCode);
@@ -78,6 +88,7 @@ Craft::Craft(binCraft & bin, const QJsonDocument &icaoAircraftTypes, const QGeoC
     js.globalObject().setProperty("gettingCloser", m_gettingCloser);
     js.globalObject().setProperty("seen", m_seen);
     js.globalObject().setProperty("cat", m_category);
+    js.globalObject().setProperty("country", m_country);
 
     QJSValue module = js.importModule("./sendAlert.mjs");
     QJSValue sendAlertFunction = module.property("sendAlert");
@@ -88,9 +99,29 @@ Craft::Craft(binCraft & bin, const QJsonDocument &icaoAircraftTypes, const QGeoC
                 << "Uncaught exception at line"
                 << result.property("lineNumber").toInt()
                 << ":" << result.toString();
-        m_sendAlert = false;
+        m_sendAlert = AlertLevel_OFF;
     }else{
-        m_sendAlert = result.toBool();
+        auto num = result.toUInt();
+        switch(num){
+        case 0:
+            m_sendAlert = AlertLevel_OFF;
+            break;
+        case 1:
+            m_sendAlert = AlertLevel_CAT1;
+            break;
+        case 2:
+            m_sendAlert = AlertLevel_CAT2;
+            break;
+        case 3:
+            m_sendAlert = AlertLevel_CAT3;
+            break;
+        case 4:
+            m_sendAlert = AlertLevel_CAT4;
+            break;
+        default:
+            m_sendAlert = AlertLevel_DEFAULT;
+            break;
+        }
     }
 }
 
@@ -112,7 +143,7 @@ int CraftModel::rowCount(const QModelIndex & /*parent*/) const
 
 int CraftModel::columnCount(const QModelIndex & /*parent*/) const
 {
-    return 12;
+    return 13;
 }
 
 QVariant CraftModel::data(const QModelIndex &index, int role) const
@@ -147,11 +178,13 @@ QVariant CraftModel::data(const QModelIndex &index, int role) const
             return craft.getDistanceToMe();
         case CM_AZIMUT:
             return craft.getGettingCloser();
+        case CM_COUNTRY:
+            return craft.getCountry();
         default:
             return QVariant();
         }
     }else if (role == Qt::BackgroundRole) {
-        QColor color = craft.getSendAlert() ? Qt::yellow : Qt::white;
+        QColor color = (craft.getSendAlert() == AlertLevel_OFF) ? Qt::white : Qt::yellow;
         return QBrush(color);
      }
     return QVariant();
@@ -185,6 +218,8 @@ QVariant CraftModel::headerData(int section, Qt::Orientation orientation, int ro
             return QString("Distance");
         case CM_AZIMUT:
             return QString("Azimut");
+        case CM_COUNTRY:
+            return QString("Country");
         default:
             QVariant();
         }
@@ -207,7 +242,7 @@ void CraftModel::refreshCraft(QVector<binCraft>& lst)
         if(!isFound){
             m_craftData.append(craftToAdd);
         }
-        if(craftToAdd.getSendAlert()){
+        if(craftToAdd.getSendAlert() != AlertLevel_OFF){
             prepareNotify(craftToAdd);
         }
     }

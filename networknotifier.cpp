@@ -42,6 +42,11 @@ void TelegramNotifier::setup(const QSettings & settings, CraftModel * origin)
     m_telegramChat = settings.value("telegram_chat").toString();
     m_telegramToken = settings.value("telegram_token").toString();
 
+    m_telegramIndicator[AlertLevel_CAT1] = settings.value("telegram_cat1").toString();
+    m_telegramIndicator[AlertLevel_CAT2] = settings.value("telegram_cat2").toString();
+    m_telegramIndicator[AlertLevel_CAT3] = settings.value("telegram_cat3").toString();
+    m_telegramIndicator[AlertLevel_CAT4] = settings.value("telegram_cat4").toString();
+
     if(m_telegramToken.isEmpty()){
         qInfo() << "No Telegram information, don't notify!";
     }else{
@@ -51,12 +56,17 @@ void TelegramNotifier::setup(const QSettings & settings, CraftModel * origin)
 
 bool TelegramNotifier::sendNotification(const Craft & craft)
 {
-    QString text = QString("[%1](https://globe.adsbexchange.com/?icao=%1) \\| Type:*%2* \\| Callsign:`%3` \\| Reg:`%4` \\| FL:`%5`\n")
+    auto indicator = m_telegramIndicator[craft.getSendAlert()];
+
+    qDebug() << "alerting with " << indicator << " indicator";
+
+    QString text = QString("[%1](https://globe.adsbexchange.com/?icao=%1) \\| Type:*%2* \\| FL:`%5` %6  \nCallsign:`%3` \\| Reg:`%4`\n")
         .arg(craft.getHex())
         .arg(craft.getTypeCode())
         .arg(craft.getCallsign())
         .arg(craft.getReg())
-        .arg(craft.getAltitude()/100);
+        .arg(craft.getAltitude()/100)
+        .arg(indicator);
 
     QString str = QString("{\"chat_id\":\"%1\", \"text\": \"%2\", \"disable_web_page_preview\": \"true\", \"parse_mode\": \"Markdown\" }")
         .arg(m_telegramChat)

@@ -92,6 +92,7 @@ Exposed variables are
 - squawk
 - distanceToMe
 - gettingCloser
+- category
 
 # Dependencies & Thanks
 
@@ -102,3 +103,5 @@ Exposed variables are
 
 
 
+
+https://github.com/ikatyang/emoji-cheat-sheet

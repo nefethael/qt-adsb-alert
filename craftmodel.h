@@ -10,6 +10,15 @@
 
 #include "adsb.h"
 
+enum AlertLevel{
+    AlertLevel_OFF,
+    AlertLevel_CAT1 = 1,
+    AlertLevel_CAT2,
+    AlertLevel_CAT3,
+    AlertLevel_CAT4,
+    AlertLevel_DEFAULT,
+};
+
 enum CraftValidity{
     CraftValidity_pad73 = 3,
     CraftValidity_callsign_valid = CraftValidity_pad73,
@@ -80,6 +89,7 @@ public:
     inline auto getLastRefresh() const { return m_lastRefresh;  }
     inline auto getPos() const { return m_pos; }
     inline auto getCategory() const { return m_category; }
+    inline auto getCountry() const { return m_country; }
     inline bool getValidity(CraftValidity type) const{
         if(type < CraftValidity_pad74){
             return m_pad73.test(type);
@@ -109,11 +119,12 @@ private:
     QString m_squawk;
     qreal m_distanceToMe;
     qreal m_gettingCloser;
-    bool m_sendAlert = false;
+    AlertLevel m_sendAlert = AlertLevel_OFF;
     float m_seen = 0.0;
     qint64 m_lastRefresh;
     QGeoCoordinate m_pos;
     QString m_category;
+    QString m_country;
 
     std::bitset<8> m_pad73;
     std::bitset<8> m_pad74;
@@ -138,7 +149,8 @@ public:
       CM_REG,
       CM_SQUAWK,
       CM_DIST,
-      CM_AZIMUT
+      CM_AZIMUT,
+      CM_COUNTRY
     };
 
     CraftModel(QObject *parent = nullptr);

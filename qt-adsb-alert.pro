@@ -20,6 +20,7 @@ SOURCES += \
 
 HEADERS += \
     adsb.h \
+    countries.h \
     craftmodel.h \
     craftproxymodel.h \
     mainwindow.h \

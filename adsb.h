@@ -58,7 +58,8 @@ typedef enum {
     COMMB_ACAS_RA,
     COMMB_VERTICAL_INTENT,
     COMMB_TRACK_TURN,
-    COMMB_HEADING_SPEED
+    COMMB_HEADING_SPEED,
+    COMMB_METEOROLOGICAL_ROUTINE
 } commb_format_t;
 
 typedef enum
@@ -126,11 +127,15 @@ struct binHeader {
     int16_t	north;
     int16_t	east;
     uint32_t messageCount;
+    //
+    uint32_t resultCount;
+    int32_t dummy = 0;
+    uint32_t binCraftVersion;
+    uint32_t messageRate;
 };
 struct binCraft {
   uint32_t hex;
-  uint16_t seen_pos;
-  uint16_t seen;
+  uint32_t seen;
   // 8
   int32_t lon;
   int32_t lat;
@@ -272,6 +277,13 @@ struct binCraft {
   uint8_t extraFlags;
   uint8_t reserved;
   // 108
+  // javascript sucks, this must be a multiple of 4 bytes for Int32Array to work correctly
+  int32_t seen_pos;
+  // 112
+#if defined(TRACKS_UUID)
+  uint32_t receiverId;
+#endif
+  // 116
 };
 #pragma pack(pop)
 

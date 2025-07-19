@@ -1,6 +1,8 @@
 #include "networknotifier.h"
 #include <QNetworkReply>
 
+#define K_PING_PERIOD 3600000 // 1h
+
 Notifier::Notifier(QObject * parent) : QObject(parent)
 {
     m_manager = new QNetworkAccessManager(this);
@@ -37,10 +39,41 @@ bool NotifyRunNotifier::sendNotification(const Craft & craft)
     return true;
 }
 
+TelegramNotifier::TelegramNotifier(QObject * parent) : Notifier(parent)
+{
+    m_timerPing = new QTimer(this);
+    connect(m_timerPing, &QTimer::timeout, this, [this](){
+        if(!m_manager) {
+            qInfo() << "Manager is not ready yet.";
+        }
+
+        qInfo() << "Ping!";
+        if(!m_monitToken.isEmpty()){
+            auto silent = "true";
+            auto text = QString("Ping %1").arg(m_monitIdent);
+            QString str = QString("{\"chat_id\":\"%1\", \"text\": \"%2\", \"disable_web_page_preview\": \"false\", \"parse_mode\": \"Markdown\", \"disable_notification\": \"%3\" }")
+                .arg(m_monitChat)
+                .arg(text)
+                .arg(silent);
+
+            QNetworkRequest req;
+            req.setUrl(QString("https://api.telegram.org/bot%1/sendMessage").arg(m_monitToken));
+            req.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+            m_manager->post(req, str.toUtf8());
+        }
+    });
+    m_timerPing->start(K_PING_PERIOD);
+
+};
+
 void TelegramNotifier::setup(const QSettings & settings, CraftModel * origin)
 {
     m_telegramChat = settings.value("telegram_chat").toString();
     m_telegramToken = settings.value("telegram_token").toString();
+
+    m_monitChat = settings.value("monit_chat").toString();
+    m_monitToken = settings.value("monit_token").toString();
+    m_monitIdent = settings.value("airport").toString();
 
     m_telegramIndicator[AlertLevel_CAT1] = settings.value("telegram_cat1").toString();
     m_telegramIndicator[AlertLevel_CAT2] = settings.value("telegram_cat2").toString();

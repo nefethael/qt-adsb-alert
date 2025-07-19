@@ -3,6 +3,7 @@
 
 #include <QNetworkAccessManager>
 #include <QSettings>
+#include <QTimer>
 #include "craftmodel.h"
 
 class Notifier : public QObject
@@ -51,14 +52,20 @@ class TelegramNotifier : public Notifier
 {
     Q_OBJECT
 public:
-    TelegramNotifier(QObject * parent = nullptr) : Notifier(parent){};
+    TelegramNotifier(QObject * parent = nullptr);
 
     virtual bool sendNotification(const Craft & craft) override;
     virtual void setup(const QSettings & settings, CraftModel * origin) override;
 private:
     QString m_telegramChat;
     QString m_telegramToken;
+
+    QString m_monitChat;
+    QString m_monitToken;
+    QString m_monitIdent;
+
     QMap<AlertLevel, QString> m_telegramIndicator;
+    QTimer *m_timerPing = nullptr;
 };
 
 #endif // NETWORKNOTIFIER_H
